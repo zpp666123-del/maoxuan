@@ -1,0 +1,5 @@
+contextUnitId,type,title,summary,details,validFrom,validTo,knownAt,timeRelation,factInterpretation,confidence,sourceIds,entityIds,placeIds,editorialStatus,visibility,editorNote
+cu_xxx,event,,,,,,,before_writing,fact,high,src_xxx,,,draft,internal,
+cu_xxx,constraint,,,,,,,at_writing,fact,high,src_xxx,,,draft,internal,
+cu_xxx,debate,,,,,,,at_writing,fact,medium,src_xxx,,,draft,internal,
+cu_xxx,reasoning_clue,,,,,,,timeless,interpretation,high,p_xxx,,,draft,internal,

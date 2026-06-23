@@ -1,0 +1,27 @@
+version: "1.1.0"
+events:
+  article_opened:
+    fields: [articleId, releaseId, entryPoint, device]
+  anchor_viewed:
+    fields: [articleId, anchorId, mode, durationMs]
+  slot_stream_started:
+    fields: [anchorId, mode, updatedSlots, latencyMs]
+  slot_expanded:
+    fields: [anchorId, slot, sourceCount]
+  interaction_created:
+    fields: [eventType, anchorId, mode, hasSelection, entityType]
+  interaction_completed:
+    fields: [eventType, updatedSlots, sceneType, latencyMs, degraded]
+  question_submitted:
+    fields: [scope, anchorId, questionLength]
+    privacy: do_not_send_question_text_to_analytics
+  feedback_submitted:
+    fields: [targetType, category, articleId, anchorId]
+  reader_returned_to_text:
+    fields: [fromSurface, anchorId]
+
+prohibited_analytics:
+  - infer_political_orientation
+  - create_sensitive_interest_profile
+  - send_paragraph_text_to_ad_network
+  - retain_raw_question_without_explicit_policy

@@ -1,0 +1,28 @@
+sequenceDiagram
+  actor U as 用户
+  participant W as Web
+  participant A as API/BFF
+  participant O as AI Orchestrator
+  participant C as Context Service
+  participant M as Model Gateway
+  participant V as Validator
+  U->>W: 选中文字/点击实体
+  W->>A: POST InteractionEvent(uiVersion)
+  A-->>W: 202 interactionId
+  W->>A: GET SSE events
+  A->>O: start workflow
+  O->>O: minimum-update planning
+  O->>C: retrieve current article context
+  C-->>O: allowed units/source IDs
+  par generate slots
+    O->>M: background task
+    O->>M: situation task
+    O->>M: thought task
+  end
+  M-->>O: structured candidates
+  O->>V: deterministic/semantic validation
+  V-->>O: pass/repair/unavailable
+  O-->>A: semantic block events
+  A-->>W: slot.start/block/commit
+  W-->>U: only update matching uiVersion slots
+  O-->>A: scene.commit / interaction.completed

@@ -1,0 +1,37 @@
+﻿flowchart TB
+  subgraph Clients[客户端]
+    Web[阅读 Web]
+    Studio[内容工作台]
+  end
+  Gateway[API/BFF + SSE]
+  subgraph App[应用层]
+    Article[Article Service]
+    Context[Context Service]
+    GenerationRun[Generation Runtime]
+    Session[Reading Session Service]
+    Orchestrator[AI Orchestrator]
+    Scene[Scene Service]
+    Registry[Prompt / Workflow Registry]
+    AdminAPI[Admin Studio API]
+  end
+  subgraph AI[AI 内部节点]
+    Planner[Interaction Planner]
+    Retriever[Context Retriever]
+    Slots[Slot Generators]
+    Validator[Validators / Repair]
+    ModelGateway[Model Gateway]
+  end
+  subgraph Data[数据层]
+    PG[(PostgreSQL / PostGIS / pgvector)]
+    Redis[(Redis)]
+    Object[(Object Storage)]
+  end
+  Web --> Gateway
+  Studio --> Gateway
+  Gateway --> Article & Context & GenerationRun & Session & Orchestrator & AdminAPI
+  Orchestrator --> Planner --> Retriever --> Slots --> Validator --> ModelGateway
+  Orchestrator --> Scene
+  Orchestrator --> Registry
+  Article & Context & GenerationRun & Session & Registry & AdminAPI --> PG
+  GenerationRun & Session & Orchestrator --> Redis
+  Context & AdminAPI --> Object

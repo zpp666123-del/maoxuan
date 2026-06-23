@@ -1,0 +1,22 @@
+{
+  "scope": "selection",
+  "updateSlots": [
+    "thought"
+  ],
+  "keepSlots": [
+    "background",
+    "situation"
+  ],
+  "retrievalTargets": [
+    "reasoning_clue",
+    "question"
+  ],
+  "sceneType": "none",
+  "timePolicy": "freeze_at_article_date",
+  "queryHints": [
+    "敌友问题",
+    "经济地位",
+    "革命态度"
+  ],
+  "rationale": "选区指向文本中的分析方法，只需要更新思想与推理槽位。"
+}

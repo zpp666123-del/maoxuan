@@ -1,0 +1,15 @@
+flowchart TB
+  C[Core Constitution\n不可覆盖规则]
+  P[Interaction Planner\n最小更新与检索计划]
+  B[Background Prompt]
+  S[Situation Prompt]
+  T[Thought Prompt]
+  SC[Scene Planner]
+  Q[Scoped QA]
+  V[Semantic Validator]
+  R[Repair Prompt]
+  C --> P
+  C --> B & S & T & SC & Q & V & R
+  P --> B & S & T & SC
+  B & S & T & SC & Q --> V
+  V --> R

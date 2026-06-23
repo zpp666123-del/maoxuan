@@ -1,0 +1,24 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.6", ranksep="0.8", label="C4 System Context", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fontsize=11, margin="0.18,0.12"];
+  edge [fontname="Noto Sans CJK SC", color="#475569", arrowsize=0.8, fontsize=9];
+
+  reader [label="阅读用户\n阅读、深挖、提问、反馈", shape=ellipse, fillcolor="#FFFBEB", color="#B45309"];
+  editor [label="内容编辑 / 审核 / 发布者\n加工 ContextPack 与运行记录", shape=ellipse, fillcolor="#F0FDF4", color="#16A34A"];
+  admin [label="系统 / AI 管理员\nPrompt、Workflow、模型、权限", shape=ellipse, fillcolor="#FAF5FF", color="#9333EA"];
+
+  system [label="毛泽东著作历史情境化阅读引擎\n\n选定版本正文\n历史情境加工层\n固定界面槽位\nAI 编排与流式输出\n内容审核与发布", fillcolor="#DBEAFE", color="#2563EB", penwidth=2, width=3.8, height=2.3];
+
+  llm [label="模型供应商 / 自托管模型\n结构化推理与生成", fillcolor="#FEE2E2", color="#DC2626"];
+  source [label="资料导入源\n已有数字文本、背景材料、地图资产", fillcolor="#F8FAFC", color="#64748B"];
+  map [label="可选地图底图服务", fillcolor="#F8FAFC", color="#64748B"];
+  auth [label="身份与通知服务", fillcolor="#F8FAFC", color="#64748B"];
+
+  reader -> system [label="Web / API"];
+  editor -> system [label="Admin Studio"];
+  admin -> system [label="Registry / Ops"];
+  system -> llm [label="受控模型任务"];
+  source -> system [label="导入 / 登记"];
+  system -> map [label="可选底图"];
+  system -> auth [label="OIDC / 通知"];
+}

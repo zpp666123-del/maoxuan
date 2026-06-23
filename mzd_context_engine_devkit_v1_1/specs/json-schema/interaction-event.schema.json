@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "interaction-event.schema.json",
+  "title": "InteractionEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventType", "releaseId", "articleId", "anchorId", "mode", "uiVersion", "occurredAt"],
+  "properties": {
+    "eventType": {"type": "string", "enum": ["anchor_changed", "paragraph_clicked", "text_selected", "entity_clicked", "question_submitted"]},
+    "releaseId": {"type": "string", "pattern": "^rel_[A-Za-z0-9_-]+$"},
+    "articleId": {"type": "string", "pattern": "^art_[A-Za-z0-9_-]+$"},
+    "anchorId": {"type": "string", "pattern": "^anc_[A-Za-z0-9_-]+$"},
+    "paragraphId": {"type": ["string", "null"], "pattern": "^p_[A-Za-z0-9_-]+$"},
+    "selection": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["text", "startParagraphId", "endParagraphId"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1, "maxLength": 2000},
+        "startParagraphId": {"type": "string", "pattern": "^p_[A-Za-z0-9_-]+$"},
+        "endParagraphId": {"type": "string", "pattern": "^p_[A-Za-z0-9_-]+$"},
+        "startOffset": {"type": ["integer", "null"], "minimum": 0},
+        "endOffset": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "entityId": {"type": ["string", "null"]},
+    "entityType": {"type": ["string", "null"], "enum": ["person", "organization", "place", "event", "concept", null]},
+    "mode": {"type": "string", "enum": ["framework_stream"]},
+    "question": {"type": ["string", "null"], "maxLength": 2000},
+    "currentUiHash": {"type": ["string", "null"], "maxLength": 100},
+    "uiVersion": {"type": "integer", "minimum": 1},
+    "occurredAt": {"type": "string", "format": "date-time"},
+    "clientContext": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,55 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=TB, nodesep="0.35", ranksep="0.55", label="生产部署拓扑", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=9.5, margin="0.14,0.09"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.65, fontsize=8];
+
+  users [label="阅读用户 / 内容团队", shape=ellipse, fillcolor="#FFFBEB", color="#B45309"];
+  cdn [label="CDN / WAF / TLS\n静态缓存 + 基础防护", fillcolor="#E2E8F0"];
+  web [label="Reader Web / Admin Studio\n静态前端或 SSR", fillcolor="#DBEAFE", color="#2563EB"];
+  lb [label="Load Balancer / API Gateway\nSSE 长连接支持", fillcolor="#DBEAFE", color="#2563EB"];
+
+  subgraph cluster_compute {
+    label="应用计算"; color="#CBD5E1"; style="rounded";
+    api1 [label="API App Replica 1\n模块化单体"];
+    api2 [label="API App Replica N\n模块化单体"];
+    queue [label="任务队列\n在线优先 / 离线批处理", fillcolor="#FAF5FF", color="#9333EA"];
+    aiw [label="AI Worker Pool", fillcolor="#FEE2E2", color="#DC2626"];
+    cw [label="Content Worker Pool", fillcolor="#F0FDF4", color="#16A34A"];
+    mg [label="Model Gateway\n熔断 / 路由 / 成本", fillcolor="#FEE2E2", color="#DC2626"];
+  }
+
+  subgraph cluster_data {
+    label="数据"; color="#CBD5E1"; style="rounded";
+    pg [label="PostgreSQL HA\n内容 / 版本 / 运行 / 审计", shape=cylinder, fillcolor="#E0F2FE", color="#0284C7"];
+    redis [label="Redis HA\n运行记录 / 会话 / 幂等 / 状态", shape=cylinder, fillcolor="#FEE2E2", color="#DC2626"];
+    obj [label="Object Storage + Versioning\n导入 / 资产 / 备份", shape=cylinder, fillcolor="#F1F5F9"];
+  }
+
+  llm [label="外部或自托管模型", fillcolor="#FEE2E2", color="#DC2626"];
+  obs [label="Logs / Metrics / Traces / Alerts", shape=cylinder, fillcolor="#F1F5F9"];
+  backup [label="备份 / 不可变审计归档", shape=cylinder, fillcolor="#F1F5F9"];
+
+  users -> cdn -> web -> lb;
+  lb -> api1;
+  lb -> api2;
+  api1 -> queue;
+  api2 -> queue;
+  queue -> aiw;
+  queue -> cw;
+  aiw -> mg -> llm;
+  api1 -> pg;
+  api2 -> pg;
+  aiw -> pg;
+  cw -> pg;
+  api1 -> redis;
+  api2 -> redis;
+  aiw -> redis;
+  cw -> obj;
+  api1 -> obj;
+  api1 -> obs;
+  api2 -> obs;
+  aiw -> obs;
+  cw -> obs;
+  pg -> backup;
+  obj -> backup;
+}

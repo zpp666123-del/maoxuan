@@ -1,0 +1,62 @@
+version: "1.1.0"
+roles:
+  anonymous_reader:
+    permissions:
+      - article.read_public
+      - interaction.create_public
+      - feedback.create
+  registered_reader:
+    inherits: [anonymous_reader]
+    permissions:
+      - progress.write_own
+      - note.write_own
+      - bookmark.write_own
+  content_editor:
+    permissions:
+      - article.draft_create
+      - article.draft_edit
+      - anchor.edit
+      - context_unit.edit
+      - source.edit
+      - context_link.edit
+      - gap.manage
+  historical_reviewer:
+    permissions:
+      - context_pack.historical_review
+      - source.reliability_review
+      - time_policy.review
+  thought_reviewer:
+    permissions:
+      - context_pack.thought_review
+      - generation_run.review
+  publisher:
+    permissions:
+      - release.create
+      - release.publish
+      - release.rollback
+  ai_admin:
+    permissions:
+      - prompt.edit
+      - prompt.evaluate
+      - prompt.publish
+      - workflow.edit
+      - workflow.publish
+      - model_policy.manage
+  rights_admin:
+    permissions:
+      - source.rights_manage
+      - article.rights_manage
+      - visibility.override_with_audit
+  system_admin:
+    permissions:
+      - identity.manage
+      - environment.manage
+      - secret.rotate
+      - audit.read
+      - operational_override
+
+segregation_of_duties:
+  - rule: content_editor_cannot_publish_own_release
+  - rule: ai_admin_cannot_modify_canonical_text
+  - rule: system_admin_override_requires_audit_reason
+  - rule: restricted_source_publication_requires_rights_admin

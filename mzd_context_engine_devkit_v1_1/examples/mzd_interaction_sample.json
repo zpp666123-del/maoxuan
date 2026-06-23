@@ -1,0 +1,25 @@
+{
+  "eventType": "text_selected",
+  "releaseId": "rel_mzd_jinghuo_local",
+  "articleId": "art_mzd_001",
+  "anchorId": "anc_mzd_001_001",
+  "paragraphId": "p_mzd_001_0002",
+  "selection": {
+    "text": "将中国社会各阶级的经济地位及其对于革命的态度，作一个大概的分析",
+    "startParagraphId": "p_mzd_001_0002",
+    "endParagraphId": "p_mzd_001_0002",
+    "startOffset": 8,
+    "endOffset": 41
+  },
+  "entityId": null,
+  "entityType": null,
+  "mode": "framework_stream",
+  "question": null,
+  "currentUiHash": "sha256:mzd001",
+  "uiVersion": 7,
+  "occurredAt": "2026-06-22T00:00:00Z",
+  "clientContext": {
+    "device": "desktop",
+    "locale": "zh-CN"
+  }
+}

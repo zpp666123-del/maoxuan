@@ -1,0 +1,17 @@
+flowchart TB
+  H[文章定位条\n标题 · 时间 · 地点 · 文体/对象 · 核心问题]
+  subgraph BODY[情境化阅读页]
+    direction LR
+    R[原文阅读区\n规范正文 · 当前锚点 · 选区]
+    subgraph SLOTS[固定解释槽位]
+      direction TB
+      B[历史背景\n此前如何走到这里]
+      S[当时处境\n此刻必须解决什么]
+      T[思想与推理\n如何观察、判断与行动]
+    end
+  end
+  V[动态场景\n地图 / 时间线 / 关系图 / 决策路径 / 无]
+  H --> BODY --> V
+  R -.当前阅读位置.-> B
+  R -.当前阅读位置.-> S
+  R -.当前阅读位置.-> T

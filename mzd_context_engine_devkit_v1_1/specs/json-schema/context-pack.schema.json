@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "context-pack.schema.json",
+  "title": "ContextPack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contextPackId", "contextPackVersion", "articleId", "articleVersionId", "cutoffDate", "status", "sources", "entities", "places", "units", "links"],
+  "properties": {
+    "contextPackId": {"type": "string", "pattern": "^cp_[A-Za-z0-9_-]+$"},
+    "contextPackVersion": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+    "articleId": {"type": "string", "pattern": "^art_[A-Za-z0-9_-]+$"},
+    "articleVersionId": {"type": "string", "pattern": "^av_[A-Za-z0-9_-]+$"},
+    "cutoffDate": {"type": ["string", "null"], "maxLength": 32},
+    "status": {"type": "string", "enum": ["draft", "review", "published", "archived"]},
+    "summary": {"type": ["string", "null"], "maxLength": 2000},
+    "sources": {
+      "type": "array",
+      "items": {"$ref": "source-ref.schema.json"}
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityId", "type", "canonicalName"],
+        "properties": {
+          "entityId": {"type": "string", "pattern": "^ent_[A-Za-z0-9_-]+$"},
+          "type": {"type": "string", "enum": ["person", "organization", "concept", "event_group"]},
+          "canonicalName": {"type": "string", "minLength": 1, "maxLength": 200},
+          "aliases": {"type": "array", "items": {"type": "string"}, "default": []},
+          "description": {"type": ["string", "null"], "maxLength": 1500}
+        }
+      }
+    },
+    "places": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["placeId", "name", "precision"],
+        "properties": {
+          "placeId": {"type": "string", "pattern": "^plc_[A-Za-z0-9_-]+$"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 200},
+          "aliases": {"type": "array", "items": {"type": "string"}, "default": []},
+          "precision": {"type": "string", "enum": ["exact", "approximate", "region", "unknown"]},
+          "longitude": {"type": ["number", "null"], "minimum": -180, "maximum": 180},
+          "latitude": {"type": ["number", "null"], "minimum": -90, "maximum": 90},
+          "description": {"type": ["string", "null"], "maxLength": 1500},
+          "sourceIds": {"type": "array", "items": {"type": "string", "pattern": "^src_[A-Za-z0-9_-]+$"}, "default": []}
+        }
+      }
+    },
+    "units": {
+      "type": "array",
+      "items": {"$ref": "context-unit.schema.json"}
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["anchorId", "contextUnitId", "role", "relevance", "priority", "slotHints", "sceneHints"],
+        "properties": {
+          "anchorId": {"type": "string", "pattern": "^anc_[A-Za-z0-9_-]+$"},
+          "contextUnitId": {"type": "string", "pattern": "^cu_[A-Za-z0-9_-]+$"},
+          "role": {"type": "string", "enum": ["precondition", "trigger", "explains_background", "explains_situation", "supports_reasoning", "contrasts_reasoning", "defines_concept", "spatial_context", "later_outcome"]},
+          "relevance": {"type": "number", "minimum": 0, "maximum": 1},
+          "priority": {"type": "integer", "minimum": 0, "maximum": 100},
+          "slotHints": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "enum": ["background", "situation", "thought"]}
+          },
+          "sceneHints": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {"type": "string", "enum": ["none", "timeline", "decision", "map", "relations"]}
+          },
+          "editorNote": {"type": ["string", "null"], "maxLength": 1000}
+        }
+      }
+    }
+  }
+}

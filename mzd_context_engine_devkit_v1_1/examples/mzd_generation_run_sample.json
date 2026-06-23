@@ -1,0 +1,105 @@
+{
+  "runId": "run_mzd_001_stream_001",
+  "interactionId": "int_mzd_001_001",
+  "parentRunId": null,
+  "releaseId": "rel_mzd_jinghuo_local",
+  "workflowVersion": "1.1.0",
+  "promptBundleVersion": "1.1.0",
+  "modelRuns": [
+    {
+      "task": "thought",
+      "modelPolicy": "slot_balanced",
+      "providerModel": "openai-compatible",
+      "status": "succeeded",
+      "latencyMs": 1200,
+      "inputTokens": null,
+      "outputTokens": null,
+      "cost": null
+    }
+  ],
+  "inputHash": "sha256:0000000000000000000000000000000000000000000000000000000000000101",
+  "retrievedContextUnitIds": [
+    "cu_mzd_001_reasoning"
+  ],
+  "sourceIds": [
+    "p_mzd_001_0001",
+    "p_mzd_001_0002",
+    "p_mzd_001_0003"
+  ],
+  "plannerOutput": {
+    "scope": "selection",
+    "updateSlots": [
+      "thought"
+    ],
+    "keepSlots": [
+      "background",
+      "situation"
+    ],
+    "retrievalTargets": [
+      "reasoning_clue",
+      "question"
+    ],
+    "sceneType": "none",
+    "timePolicy": "freeze_at_article_date",
+    "queryHints": [
+      "敌友问题",
+      "经济地位",
+      "革命态度"
+    ],
+    "rationale": "选区指向文本中的分析方法，只需要更新思想与推理槽位。"
+  },
+  "status": "completed",
+  "validation": {
+    "schemaValid": true,
+    "semanticStatus": "pass"
+  },
+  "finalOutput": {
+    "cards": {
+      "thought": {
+        "slot": "thought",
+        "status": "ready",
+        "headline": "由敌友进入分析",
+        "summary": "大模型在固定槽位内只依据当前锚点原文生成，说明文本如何把政治判断放回阶级地位和态度分析中。",
+        "points": [
+          {
+            "label": "问题入口",
+            "text": "开头把敌友问题设为首要问题。",
+            "sourceIds": [
+              "p_mzd_001_0001"
+            ]
+          },
+          {
+            "label": "分析约束",
+            "text": "判断必须回到经济地位和革命态度。",
+            "sourceIds": [
+              "p_mzd_001_0002"
+            ]
+          }
+        ],
+        "sourceIds": [
+          "p_mzd_001_0001",
+          "p_mzd_001_0002"
+        ],
+        "anchorIds": [
+          "anc_mzd_001_001"
+        ],
+        "uncertainty": {
+          "level": "none",
+          "note": null
+        },
+        "generatedBy": {
+          "kind": "dynamic_ai",
+          "promptVersion": "thought_framework_stream@2.1.0",
+          "runId": "run_mzd_001_stream_001"
+        }
+      }
+    }
+  },
+  "timings": {
+    "totalMs": 1800,
+    "generationMs": 1200,
+    "validationMs": 220
+  },
+  "createdAt": "2026-06-22T00:00:00Z",
+  "completedAt": "2026-06-22T00:00:02Z"
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "context-unit.schema.json",
+  "title": "ContextUnit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["contextUnitId", "type", "title", "summary", "timeRelation", "factInterpretation", "confidence", "sourceIds", "editorialStatus", "visibility"],
+  "properties": {
+    "contextUnitId": {"type": "string", "pattern": "^cu_[A-Za-z0-9_-]+$"},
+    "type": {
+      "type": "string",
+      "enum": ["event", "actor_state", "constraint", "debate", "option", "concept", "place", "statistic", "outcome", "question", "reasoning_clue"]
+    },
+    "title": {"type": "string", "minLength": 1, "maxLength": 160},
+    "summary": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "details": {"type": ["string", "null"], "maxLength": 5000},
+    "validFrom": {"type": ["string", "null"], "maxLength": 32},
+    "validTo": {"type": ["string", "null"], "maxLength": 32},
+    "knownAt": {"type": ["string", "null"], "maxLength": 32},
+    "timeRelation": {"type": "string", "enum": ["long_term", "before_writing", "at_writing", "after_writing", "timeless", "unknown"]},
+    "factInterpretation": {"type": "string", "enum": ["fact", "interpretation", "inference", "question"]},
+    "confidence": {"type": "string", "enum": ["high", "medium", "low"]},
+    "entityIds": {"type": "array", "uniqueItems": true, "items": {"type": "string"}, "default": []},
+    "placeIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^plc_[A-Za-z0-9_-]+$"}, "default": []},
+    "sourceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^(src_|p_)[A-Za-z0-9_-]+$"}},
+    "editorialStatus": {"type": "string", "enum": ["machine_candidate", "draft", "approved", "rejected", "archived"]},
+    "visibility": {"type": "string", "enum": ["public", "internal", "private"]},
+    "structuredData": {"type": "object", "additionalProperties": true},
+    "editorNote": {"type": ["string", "null"], "maxLength": 2000}
+  }
+}

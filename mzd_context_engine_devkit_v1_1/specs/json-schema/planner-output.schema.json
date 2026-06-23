@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "planner-output.schema.json",
+  "title": "PlannerOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["scope", "updateSlots", "keepSlots", "retrievalTargets", "sceneType", "timePolicy", "queryHints", "rationale"],
+  "properties": {
+    "scope": {"type": "string", "enum": ["article", "anchor", "selection", "entity", "question"]},
+    "updateSlots": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["background", "situation", "thought"]}
+    },
+    "keepSlots": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["background", "situation", "thought"]}
+    },
+    "retrievalTargets": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "enum": ["event", "actor_state", "constraint", "debate", "option", "concept", "place", "statistic", "outcome", "question", "reasoning_clue"]}
+    },
+    "sceneType": {"type": "string", "enum": ["none", "timeline", "decision", "map", "relations"]},
+    "timePolicy": {"type": "string", "enum": ["freeze_at_article_date", "allow_aftereffects"]},
+    "queryHints": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 100}},
+    "rationale": {"type": "string", "maxLength": 500}
+  }
+}

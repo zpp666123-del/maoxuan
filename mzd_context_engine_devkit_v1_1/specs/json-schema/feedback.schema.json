@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "feedback.schema.json",
+  "title": "Feedback",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sessionId", "targetType", "targetId", "category", "createdAt"],
+  "properties": {
+    "sessionId": {"type": "string", "pattern": "^ses_[A-Za-z0-9_-]+$"},
+    "interactionId": {"type": ["string", "null"], "pattern": "^int_[A-Za-z0-9_-]+$"},
+    "targetType": {"type": "string", "enum": ["article", "anchor", "slot", "scene", "answer"]},
+    "targetId": {"type": "string"},
+    "category": {"type": "string", "enum": ["inaccurate", "irrelevant", "time_leakage", "unsupported", "duplicated", "too_long", "too_shallow", "hard_to_understand", "visual_error", "other"]},
+    "comment": {"type": ["string", "null"], "maxLength": 2000},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}

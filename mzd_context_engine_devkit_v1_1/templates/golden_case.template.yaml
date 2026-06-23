@@ -1,0 +1,22 @@
+id: gs_replace_me
+articleId: art_replace_me
+anchorId: anc_replace_me
+mode: time_frozen
+event:
+  eventType: text_selected
+  paragraphId: p_replace_me
+  selection: ""
+expected:
+  updateSlots: [thought]
+  keepSlots: [background, situation]
+  allowedScene: [decision, none]
+  mustMentionConcepts: []
+  forbiddenClaims: []
+  allowedSourceIds: []
+  expectedUnavailable: false
+rubric:
+  relevance: 5
+  historical_accuracy: 5
+  time_boundary: 5
+  slot_separation: 5
+notes: ""

@@ -1,0 +1,43 @@
+digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=TB, nodesep="0.18", ranksep="0.35", label="文本选中后的交互时序（概念图）", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=9, margin="0.12,0.07"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.6, fontsize=8];
+
+  subgraph cluster_actor {
+    label="参与者"; color="#CBD5E1"; style="rounded";
+    browser [label="Reader Web", fillcolor="#FFFBEB", color="#B45309"];
+    bff [label="API / SSE", fillcolor="#DBEAFE", color="#2563EB"];
+    orch [label="Orchestrator", fillcolor="#FEE2E2", color="#DC2626"];
+    ctx [label="Context Service", fillcolor="#E0F2FE", color="#0284C7"];
+    model [label="Model Gateway", fillcolor="#FAF5FF", color="#9333EA"];
+    store [label="Run Store / Cache", shape=cylinder, fillcolor="#F1F5F9"];
+  }
+
+  s1 [label="1. 用户选中文字，uiVersion=7", shape=note, fillcolor="#FFFBEB"];
+  s2 [label="2. POST interaction + Idempotency-Key", shape=note];
+  s3 [label="3. 返回 interactionId 与 streamUrl", shape=note];
+  s4 [label="4. 建立 SSE，accepted", shape=note];
+  s5 [label="5. Planner：只更新 thought，背景/处境保持", shape=note, fillcolor="#FEE2E2"];
+  s6 [label="6. 按时间策略检索正文与 ContextUnit", shape=note, fillcolor="#E0F2FE"];
+  s7 [label="7. 调用 thought 生成与校验", shape=note, fillcolor="#FAF5FF"];
+  s8 [label="8. slot.block：标题/摘要", shape=note, fillcolor="#DCFCE7"];
+  s9 [label="9. slot.committed：完整合法卡片", shape=note, fillcolor="#DCFCE7"];
+  s10 [label="10. scene.committed（可选）", shape=note, fillcolor="#DCFCE7"];
+  s11 [label="11. 保存 Run 与缓存，completed", shape=note];
+
+  browser -> s1 [style=invis];
+  s1 -> bff [label="2"];
+  bff -> s3 [style=invis];
+  s3 -> browser [label="3"];
+  browser -> bff [label="4 GET SSE"];
+  bff -> orch [label="启动工作流"];
+  orch -> s5 [style=invis];
+  orch -> ctx [label="6 retrieval"];
+  ctx -> orch [label="curated context"];
+  orch -> model [label="7 structured task"];
+  model -> orch [label="candidate JSON"];
+  orch -> bff [label="8 / 9 / 10 events"];
+  bff -> browser [label="SSE"];
+  orch -> store [label="11 persist/cache"];
+  store -> bff [label="final result query", style=dashed];
+}

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "generation-run.schema.json",
+  "title": "GenerationRun",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["runId", "interactionId", "releaseId", "workflowVersion", "promptBundleVersion", "status", "retrievedContextUnitIds", "sourceIds", "timings", "createdAt"],
+  "properties": {
+    "runId": {"type": "string", "pattern": "^run_[A-Za-z0-9_-]+$"},
+    "interactionId": {"type": "string", "pattern": "^int_[A-Za-z0-9_-]+$"},
+    "parentRunId": {"type": ["string", "null"], "pattern": "^run_[A-Za-z0-9_-]+$"},
+    "releaseId": {"type": "string", "pattern": "^rel_[A-Za-z0-9_-]+$"},
+    "workflowVersion": {"type": "string"},
+    "promptBundleVersion": {"type": "string"},
+    "modelRuns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task", "modelPolicy", "status", "latencyMs"],
+        "properties": {
+          "task": {"type": "string"},
+          "modelPolicy": {"type": "string"},
+          "providerModel": {"type": ["string", "null"]},
+          "status": {"type": "string", "enum": ["succeeded", "failed", "cancelled"]},
+          "latencyMs": {"type": "integer", "minimum": 0},
+          "inputTokens": {"type": ["integer", "null"], "minimum": 0},
+          "outputTokens": {"type": ["integer", "null"], "minimum": 0},
+          "cost": {"type": ["number", "null"], "minimum": 0}
+        }
+      },
+      "default": []
+    },
+    "inputHash": {"type": ["string", "null"]},
+    "retrievedContextUnitIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^cu_[A-Za-z0-9_-]+$"}},
+    "sourceIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^(src_|p_)[A-Za-z0-9_-]+$"}},
+    "plannerOutput": {"anyOf": [{"$ref": "planner-output.schema.json"}, {"type": "null"}]},
+    "status": {"type": "string", "enum": ["accepted", "running", "completed", "degraded", "failed", "cancelled"]},
+    "validation": {"type": ["object", "null"], "additionalProperties": true},
+    "finalOutput": {"type": ["object", "null"], "additionalProperties": true},
+    "timings": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "createdAt": {"type": "string", "format": "date-time"},
+    "completedAt": {"type": ["string", "null"], "format": "date-time"}
+  }
+}

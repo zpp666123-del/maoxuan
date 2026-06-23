@@ -1,0 +1,14 @@
+flowchart LR
+  Reader[阅读用户]
+  Editor[内容编辑/审核者]
+  Admin[系统管理员]
+  Product[历史情境化阅读引擎]
+  Model[模型供应商或自建模型]
+  Maps[地图底图/地理服务]
+  Obs[日志、指标、追踪]
+  Reader -->|阅读、点击、选中、提问、反馈| Product
+  Editor -->|正文、锚点、ContextPack、审核与发布| Product
+  Admin -->|Prompt、Workflow、权限与配置| Product
+  Product -->|受控任务协议| Model
+  Product -->|可选底图与地理渲染| Maps
+  Product -->|运行和质量遥测| Obs

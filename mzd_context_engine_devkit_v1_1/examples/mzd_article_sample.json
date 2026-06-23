@@ -1,0 +1,61 @@
+{
+  "articleId": "art_mzd_001",
+  "articleVersionId": "av_mzd_001_jinghuo_local",
+  "slug": "mzd-001",
+  "title": "中国社会各阶级的分析",
+  "canonicalEdition": "静火版本《毛泽东选集》本地 Markdown 语料",
+  "date": {
+    "value": "1925-12-01",
+    "endValue": null,
+    "precision": "day",
+    "display": "一九二五年十二月一日"
+  },
+  "location": {
+    "text": "第一次国内革命战争时期",
+    "placeId": null,
+    "precision": "unknown"
+  },
+  "documentType": "essay",
+  "audience": null,
+  "purpose": null,
+  "coreQuestion": "围绕《中国社会各阶级的分析》理解其历史背景、当时处境与思想推理。",
+  "textHash": "sha256:0000000000000000000000000000000000000000000000000000000000000001",
+  "paragraphs": [
+    {
+      "paragraphId": "p_mzd_001_0001",
+      "ordinal": 1,
+      "text": "谁是我们的敌人？谁是我们的朋友？这个问题是革命的首要问题。",
+      "textHash": "sha256:0000000000000000000000000000000000000000000000000000000000000011",
+      "entitySpans": []
+    },
+    {
+      "paragraphId": "p_mzd_001_0002",
+      "ordinal": 2,
+      "text": "要分辨真正的敌友，不可不将中国社会各阶级的经济地位及其对于革命的态度，作一个大概的分析。",
+      "textHash": "sha256:0000000000000000000000000000000000000000000000000000000000000012",
+      "entitySpans": []
+    },
+    {
+      "paragraphId": "p_mzd_001_0003",
+      "ordinal": 3,
+      "text": "这篇文章以阶级分析展开问题，把政治判断约束在具体社会关系和实际态度之中。",
+      "textHash": "sha256:0000000000000000000000000000000000000000000000000000000000000013",
+      "entitySpans": []
+    }
+  ],
+  "anchors": [
+    {
+      "anchorId": "anc_mzd_001_001",
+      "title": "首要问题与分析方法",
+      "paragraphIds": [
+        "p_mzd_001_0001",
+        "p_mzd_001_0002",
+        "p_mzd_001_0003"
+      ],
+      "coreQuestion": "文章开头如何把政治问题转化为阶级分析问题？",
+      "functionInArticle": "提出全文问题，并限定后续分析的方法入口。",
+      "summary": "锚点从敌友问题入手，要求回到各阶级经济地位和政治态度中判断。",
+      "scenePreference": "none"
+    }
+  ]
+}

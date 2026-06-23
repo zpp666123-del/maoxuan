@@ -1,0 +1,48 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.35", ranksep="0.55", label="核心领域数据模型", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=record, style="filled", fillcolor="#F8FAFC", color="#64748B", fontsize=8.7, margin="0.10,0.06"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.6, fontsize=7.5];
+
+  article [label="{Article|id\ltitle\lcurrentReleaseId\l}", fillcolor="#FFFBEB", color="#B45309"];
+  av [label="{ArticleVersion|id\lcanonicalEdition\ldate/location\ltextHash\l}"];
+  p [label="{Paragraph|id\lordinal\ltext\l}"];
+  a [label="{Anchor|id\lparagraph range\lcoreQuestion\lfunction\l}"];
+  cp [label="{ContextPackVersion|id\lversion\lcutoffDate\lstatus\l}", fillcolor="#DBEAFE", color="#2563EB"];
+  cu [label="{ContextUnit|id\ltype\ltime/knownAt\lfactInterpretation\lstatus\l}"];
+  link [label="{ContextLink|anchorId\lunitId\lrole\lrelevance\lslot/scene hints\l}"];
+  src [label="{Source|id\ltype\lreliability\lrights/visibility\l}"];
+  ent [label="{Entity / Place|id\ltype/name\lstate/geometry\l}"];
+  bundle [label="{PromptBundle|id\lversion\lpromptMap\l}", fillcolor="#FEE2E2", color="#DC2626"];
+  wf [label="{WorkflowVersion|id\lversion\ldefinition\l}", fillcolor="#FEE2E2", color="#DC2626"];
+  set [label="{GenerationRunSet|id\lcontextPackVersion\lpromptBundleVersion\lqualityReport\l}"];
+  snap [label="{GenerationRun|anchorId\lmode\lcards\lscene\lcontentHash\l}", fillcolor="#F0FDF4", color="#16A34A"];
+  rel [label="{Release|id\larticleVersion\lcontextPackVersion\lpromptBundle\lworkflow\lgenerationRunSet\l}", fillcolor="#DCFCE7", color="#16A34A"];
+  sess [label="{ReadingSession|id\lreleaseId\lanchor/mode\luiVersion\l}"];
+  inter [label="{InteractionEvent|id\leventType\lselection/entity/question\lstatus\l}"];
+  run [label="{GenerationRun|id\lversions\lretrieved IDs\lvalidation\loutput/timings\l}"];
+  fb [label="{Feedback|target\lcategory\lstatus\l}"];
+
+  article -> av [label="1:N"];
+  av -> p [label="1:N"];
+  av -> a [label="1:N"];
+  av -> cp [label="1:N"];
+  cp -> cu [label="1:N"];
+  a -> link [label="1:N"];
+  cu -> link [label="1:N"];
+  cu -> src [label="N:M"];
+  cu -> ent [label="N:M"];
+  cp -> set [label="1:N"];
+  bundle -> set;
+  wf -> set;
+  set -> snap [label="1:N"];
+  av -> rel;
+  cp -> rel;
+  bundle -> rel;
+  wf -> rel;
+  set -> rel;
+  article -> rel [label="1:N"];
+  rel -> sess [label="1:N"];
+  sess -> inter [label="1:N"];
+  inter -> run [label="1:N"];
+  inter -> fb [label="0:N"];
+}

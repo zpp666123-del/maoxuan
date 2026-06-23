@@ -1,0 +1,635 @@
+openapi: 3.1.0
+info:
+  title: 毛泽东著作历史情境化阅读引擎 API
+  version: 1.1.0
+  description: |
+    阅读端、AI 交互和内容工作台的基线契约。所有阅读请求绑定 releaseId，所有动态交互通过 SSE 返回语义块。
+servers:
+  - url: http://localhost:8000/api/v1
+    description: local
+
+tags:
+  - name: Articles
+  - name: Reading
+  - name: Interactions
+  - name: Settings
+  - name: Feedback
+  - name: Admin
+
+paths:
+  /articles:
+    get:
+      tags: [Articles]
+      summary: 获取已发布文章列表
+      parameters:
+        - in: query
+          name: collection
+          schema: {type: string}
+        - in: query
+          name: limit
+          schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ArticleSummary"
+
+  /articles/{articleId}:
+    get:
+      tags: [Articles]
+      summary: 获取文章正文、段落和锚点
+      parameters:
+        - $ref: "#/components/parameters/ArticleId"
+        - $ref: "#/components/parameters/ReleaseIdQuery"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "./json-schema/article.schema.json"
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /reading-sessions:
+    post:
+      tags: [Reading]
+      summary: 创建阅读会话
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadingSession"
+
+  /settings/llm:
+    get:
+      tags: [Settings]
+      summary: 获取当前大模型 API 配置摘要
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LLMSettingsResponse"
+    put:
+      tags: [Settings]
+      summary: 保存运行时大模型 API 配置
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LLMSettingsUpdate"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LLMSettingsResponse"
+
+  /reading-sessions/{sessionId}/interactions:
+    post:
+      tags: [Interactions]
+      summary: 提交用户交互并启动 AI 工作流
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./json-schema/interaction-event.schema.json"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionAccepted"
+        "409":
+          description: 交互版本或幂等冲突
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorEnvelope"}
+
+  /reading-sessions/{sessionId}/workflows:
+    post:
+      tags: [Interactions]
+      summary: 提交探索节点并启动 Agent 工作流
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WorkflowRequest"
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowAccepted"
+        "409":
+          description: 会话与工作流文章不一致
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorEnvelope"}
+
+  /interactions/{interactionId}:
+    get:
+      tags: [Interactions]
+      summary: 查询交互最终状态和结果
+      parameters:
+        - $ref: "#/components/parameters/InteractionId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionResult"
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /interactions/{interactionId}/events:
+    get:
+      tags: [Interactions]
+      summary: 订阅交互 SSE 事件
+      parameters:
+        - $ref: "#/components/parameters/InteractionId"
+        - in: header
+          name: Last-Event-ID
+          required: false
+          schema: {type: integer, minimum: 1}
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /interactions/{interactionId}/cancel:
+    post:
+      tags: [Interactions]
+      summary: 取消未完成交互
+      parameters:
+        - $ref: "#/components/parameters/InteractionId"
+      responses:
+        "202": {description: cancellation accepted}
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /workflows/{workflowId}:
+    get:
+      tags: [Interactions]
+      summary: 查询 Agent 工作流状态
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+        "404": {$ref: "#/components/responses/NotFound"}
+
+  /workflows/{workflowId}/events:
+    get:
+      tags: [Interactions]
+      summary: 订阅 Agent 工作流 SSE 事件
+      parameters:
+        - $ref: "#/components/parameters/WorkflowId"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /feedback:
+    post:
+      tags: [Feedback]
+      summary: 提交卡片或答案反馈
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./json-schema/feedback.schema.json"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [feedbackId, status]
+                properties:
+                  feedbackId: {type: string}
+                  status: {type: string, const: received}
+
+  /admin/articles/import:
+    post:
+      tags: [Admin]
+      summary: 导入选定版本正文
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, canonicalEdition, text]
+              properties:
+                title: {type: string}
+                canonicalEdition: {type: string}
+                text: {type: string}
+                metadata: {type: object, additionalProperties: true}
+      responses:
+        "202":
+          description: Import job accepted
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/JobAccepted"}
+
+  /admin/article-versions/{articleVersionId}/anchors:
+    put:
+      tags: [Admin]
+      summary: 保存锚点定义
+      security: [{bearerAuth: []}]
+      parameters:
+        - in: path
+          name: articleVersionId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [anchors]
+              properties:
+                anchors:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+      responses:
+        "200": {description: Saved}
+        "422":
+          description: 覆盖或重叠校验失败
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorEnvelope"}
+
+  /admin/context-packs/{contextPackVersionId}/units:
+    post:
+      tags: [Admin]
+      summary: 创建 ContextUnit
+      security: [{bearerAuth: []}]
+      parameters:
+        - in: path
+          name: contextPackVersionId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./json-schema/context-unit.schema.json"
+      responses:
+        "201": {description: Created}
+
+  /admin/context-units/{contextUnitId}:
+    put:
+      tags: [Admin]
+      summary: 修改 ContextUnit 草稿
+      security: [{bearerAuth: []}]
+      parameters:
+        - in: path
+          name: contextUnitId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "./json-schema/context-unit.schema.json"
+      responses:
+        "200": {description: Saved}
+
+  /admin/articles/{articleId}/releases:
+    post:
+      tags: [Admin]
+      summary: 创建并发布不可变 Release
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "#/components/parameters/ArticleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [articleVersionId, contextPackVersionId, promptBundleVersion, workflowVersion]
+              properties:
+                articleVersionId: {type: string}
+                contextPackVersionId: {type: string}
+                promptBundleVersion: {type: string}
+                workflowVersion: {type: string}
+                releaseNotes: {type: string}
+      responses:
+        "201":
+          description: Published
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [releaseId, status]
+                properties:
+                  releaseId: {type: string}
+                  status: {type: string, const: active}
+        "422":
+          description: Quality or rights gate failed
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorEnvelope"}
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    ArticleId:
+      in: path
+      name: articleId
+      required: true
+      schema: {type: string, pattern: "^art_"}
+    AnchorId:
+      in: path
+      name: anchorId
+      required: true
+      schema: {type: string, pattern: "^anc_"}
+    SessionId:
+      in: path
+      name: sessionId
+      required: true
+      schema: {type: string, pattern: "^ses_"}
+    InteractionId:
+      in: path
+      name: interactionId
+      required: true
+      schema: {type: string, pattern: "^int_"}
+    WorkflowId:
+      in: path
+      name: workflowId
+      required: true
+      schema: {type: string, pattern: "^wf_"}
+    ReleaseIdQuery:
+      in: query
+      name: releaseId
+      required: true
+      schema: {type: string, pattern: "^rel_"}
+    IdempotencyKey:
+      in: header
+      name: Idempotency-Key
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 128}
+
+  responses:
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: {$ref: "#/components/schemas/ErrorEnvelope"}
+
+  schemas:
+    ArticleSummary:
+      type: object
+      required: [articleId, title, currentReleaseId]
+      properties:
+        articleId: {type: string}
+        title: {type: string}
+        dateDisplay: {type: string}
+        documentType: {type: string}
+        volumeTitle: {type: string}
+        sectionTitle: {type: string}
+        coreQuestion: {type: string}
+        currentReleaseId: {type: string}
+
+    CreateSessionRequest:
+      type: object
+      required: [releaseId, articleId, anchorId, mode]
+      properties:
+        releaseId: {type: string}
+        articleId: {type: string}
+        anchorId: {type: string}
+        mode:
+          type: string
+          enum: [framework_stream]
+        client:
+          type: object
+          additionalProperties: true
+
+    ReadingSession:
+      type: object
+      required: [sessionId, releaseId, articleId, anchorId, mode, createdAt]
+      properties:
+        sessionId: {type: string}
+        releaseId: {type: string}
+        articleId: {type: string}
+        anchorId: {type: string}
+        mode: {type: string}
+        createdAt: {type: string, format: date-time}
+
+    InteractionAccepted:
+      type: object
+      required: [interactionId, status, streamUrl, pollUrl, uiVersion]
+      properties:
+        interactionId: {type: string}
+        status: {type: string, const: accepted}
+        streamUrl: {type: string}
+        pollUrl: {type: string}
+        uiVersion: {type: integer}
+
+    WorkflowTarget:
+      type: object
+      additionalProperties: false
+      required: [targetType, label, sourceIds]
+      properties:
+        targetType:
+          type: string
+          enum: [article, anchor, paragraph, selection, person, event, place, timeline, illustration]
+        targetId: {type: [string, "null"], maxLength: 200}
+        label: {type: string, minLength: 1, maxLength: 200}
+        sourceIds:
+          type: array
+          maxItems: 20
+          items: {type: string}
+
+    WorkflowRequest:
+      type: object
+      additionalProperties: false
+      required: [releaseId, articleId, anchorId, workflow, target, mode, uiVersion, occurredAt]
+      properties:
+        releaseId: {type: string}
+        articleId: {type: string}
+        anchorId: {type: string}
+        workflow:
+          type: string
+          enum: [article_overview, timeline, figure_network, event_chain, map_context, illustration_prompt]
+        target:
+          $ref: "#/components/schemas/WorkflowTarget"
+        mode:
+          type: string
+          enum: [framework_stream]
+        uiVersion: {type: integer, minimum: 1}
+        occurredAt: {type: string, format: date-time}
+        forceRegenerate:
+          type: boolean
+          default: false
+
+    WorkflowAccepted:
+      type: object
+      required: [workflowId, status, streamUrl, pollUrl, uiVersion]
+      properties:
+        workflowId: {type: string}
+        status: {type: string, const: accepted}
+        streamUrl: {type: string}
+        pollUrl: {type: string}
+        uiVersion: {type: integer}
+        cached: {type: boolean}
+
+    LLMSettingsUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        baseUrl: {type: string, minLength: 8, maxLength: 300}
+        model: {type: string, minLength: 1, maxLength: 120}
+        apiKey:
+          type: string
+          minLength: 1
+          maxLength: 4000
+          writeOnly: true
+        clearApiKey: {type: boolean, default: false}
+        temperature:
+          type: number
+          minimum: 0
+          maximum: 2
+        imageBaseUrl: {type: string, minLength: 8, maxLength: 300}
+        imageModel: {type: string, minLength: 1, maxLength: 120}
+        imageSize: {type: string, minLength: 4, maxLength: 40}
+        imageQuality:
+          type: string
+          enum: [low, medium, high, auto]
+        imageOutputFormat:
+          type: string
+          enum: [png, webp, jpeg]
+
+    LLMSettingsResponse:
+      type: object
+      required: [baseUrl, model, hasApiKey, apiKeySource, temperature, imageBaseUrl, imageModel, imageSize, imageQuality, imageOutputFormat]
+      properties:
+        baseUrl: {type: string}
+        model: {type: string}
+        hasApiKey: {type: boolean}
+        apiKeySource:
+          type: string
+          enum: [runtime, environment, missing]
+        temperature:
+          type: number
+        imageBaseUrl: {type: string}
+        imageModel: {type: string}
+        imageSize: {type: string}
+        imageQuality: {type: string}
+        imageOutputFormat: {type: string}
+
+    InteractionResult:
+      type: object
+      required: [interactionId, status, uiVersion]
+      properties:
+        interactionId: {type: string}
+        status:
+          type: string
+          enum: [accepted, running, completed, failed, cancelled]
+        uiVersion: {type: integer}
+        plannerOutput:
+          $ref: "./json-schema/planner-output.schema.json"
+        cards:
+          type: object
+          additionalProperties:
+            $ref: "./json-schema/ui-card.schema.json"
+        error:
+          $ref: "#/components/schemas/ErrorObject"
+
+    WorkflowResult:
+      type: object
+      required: [workflowId, status, workflow, uiVersion]
+      properties:
+        workflowId: {type: string}
+        status:
+          type: string
+          enum: [accepted, running, completed, failed, cancelled]
+        workflow:
+          type: string
+          enum: [article_overview, timeline, figure_network, event_chain, map_context, illustration_prompt]
+        uiVersion: {type: integer}
+        cached: {type: boolean}
+        hasArtifact: {type: boolean}
+
+    JobAccepted:
+      type: object
+      required: [jobId, status]
+      properties:
+        jobId: {type: string}
+        status: {type: string, const: queued}
+
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorObject"
+
+    ErrorObject:
+      type: object
+      required: [code, message, requestId, retryable]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        requestId: {type: string}
+        retryable: {type: boolean}
+        details:
+          type: object
+          additionalProperties: true

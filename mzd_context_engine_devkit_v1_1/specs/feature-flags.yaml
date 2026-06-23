@@ -1,0 +1,32 @@
+version: "1.1.0"
+flags:
+  dynamic_ai_interactions:
+    default: false
+    description: 启用点击、选中和模式切换的实时 AI 工作流。
+  scoped_qa:
+    default: false
+    description: 启用当前文章范围问答。
+  timeline_scene:
+    default: true
+  decision_scene:
+    default: true
+  map_scene:
+    default: false
+  relations_scene:
+    default: false
+  thought_lineage_mode:
+    default: false
+  card_locking:
+    default: false
+  user_notes:
+    default: false
+  original_page_images:
+    default: false
+    description: 后续原始页影像能力。
+  edition_comparison:
+    default: false
+    description: 后续版本异文能力。
+  semantic_validator_for_all_dynamic_runs:
+    default: true
+  external_model_for_restricted_sources:
+    default: false

@@ -1,0 +1,12 @@
+flowchart TB
+  User[Browser] --> CDN[CDN / WAF]
+  CDN --> Web[Web Frontend]
+  Web --> API[API/BFF replicas]
+  API --> App[Application API]
+  API --> Worker[AI & Content Workers]
+  App & Worker --> PG[(Managed PostgreSQL)]
+  App & Worker --> Redis[(Redis)]
+  Worker --> Object[(Object Storage)]
+  Worker --> Gateway[Model Gateway]
+  Gateway --> Ext[External/Self-hosted Models]
+  API & App & Worker & Gateway --> Obs[Logs / Metrics / Traces]

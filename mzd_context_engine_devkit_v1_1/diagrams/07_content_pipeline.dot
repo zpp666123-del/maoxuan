@@ -1,0 +1,27 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.3", ranksep="0.5", label="内容生产、审核与发布流程", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=9.5, margin="0.14,0.09"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.65, fontsize=8];
+
+  import [label="导入选定版本正文", fillcolor="#FFFBEB", color="#B45309"];
+  para [label="校对 / 段落 ID / 正文哈希"];
+  anchor [label="划分锚点\nAI 候选 + 人工确认"];
+  frame [label="文章级问题与时间骨架"];
+  extract [label="AI 提取 ContextUnit 候选\n事件 / 约束 / 争论 / 选项 / 概念", fillcolor="#FEE2E2", color="#DC2626"];
+  edit [label="编辑确认、补充、拒绝\n登记来源与权利", fillcolor="#F0FDF4", color="#16A34A"];
+  link [label="关联 Anchor ↔ ContextUnit\n角色 / 相关度 / 槽位 / 场景"];
+  gap [label="缺口检测与补充"];
+  gen [label="批量生成锚点运行记录\nPrompt + Workflow", fillcolor="#FEE2E2", color="#DC2626"];
+  auto [label="自动质量门禁\nSchema / 来源 / 时间 / 重复"];
+  hist [label="历史审核", fillcolor="#DBEAFE", color="#2563EB"];
+  thought [label="思想与原文审核", fillcolor="#FAF5FF", color="#9333EA"];
+  publish [label="创建不可变 Release\n预热缓存 → 原子发布", fillcolor="#DCFCE7", color="#16A34A"];
+  feedback [label="用户反馈 / 质量监控\n进入修订闭环", fillcolor="#E2E8F0"];
+
+  import -> para -> anchor -> frame -> extract -> edit -> link -> gap -> gen -> auto -> hist -> thought -> publish -> feedback;
+  gap -> edit [label="有阻塞缺口", color="#D97706"];
+  auto -> edit [label="失败", color="#DC2626"];
+  hist -> edit [label="退回", color="#DC2626"];
+  thought -> edit [label="退回", color="#DC2626"];
+  feedback -> edit [label="新版本修订", style=dashed];
+}

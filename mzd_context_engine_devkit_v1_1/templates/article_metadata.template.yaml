@@ -1,0 +1,19 @@
+articleId: art_replace_me
+articleVersionId: av_replace_me_1
+title: ""
+canonicalEdition: "说明项目采用的版本、卷次与导入来源"
+date:
+  value: null
+  endValue: null
+  precision: unknown
+  display: ""
+location:
+  text: null
+  placeId: null
+  precision: unknown
+documentType: other
+audience: ""
+purpose: ""
+coreQuestion: "这篇文章在当时要解决的核心问题是什么？"
+cutoffDate: null
+editorNotes: ""

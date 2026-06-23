@@ -1,0 +1,119 @@
+{
+  "contextPackId": "cp_mzd_001_sample",
+  "contextPackVersion": "1.0.0",
+  "articleId": "art_mzd_001",
+  "articleVersionId": "av_mzd_001_jinghuo_local",
+  "cutoffDate": "1925-12-01",
+  "status": "published",
+  "summary": "围绕《中国社会各阶级的分析》首个阅读锚点的结构化样例。运行时仍以当前锚点原文作为唯一事实来源。",
+  "sources": [
+    {
+      "sourceId": "src_mzd_001_text",
+      "title": "中国社会各阶级的分析",
+      "sourceType": "canonical_text",
+      "creator": "毛泽东",
+      "publicationDate": "1925-12-01",
+      "locator": "开头锚点",
+      "citationLabel": "静火版本本地 Markdown",
+      "reliability": "A",
+      "rightsStatus": "unknown",
+      "visibility": "public",
+      "notes": "用于 API 契约校验的短样例；完整正文由本地语料目录加载。"
+    }
+  ],
+  "entities": [
+    {
+      "entityId": "ent_mzd_001_concept_class_analysis",
+      "type": "concept",
+      "canonicalName": "阶级分析",
+      "aliases": [],
+      "description": "本文开头用于分辨敌友和组织政治判断的方法入口。"
+    }
+  ],
+  "places": [],
+  "units": [
+    {
+      "contextUnitId": "cu_mzd_001_question",
+      "type": "question",
+      "title": "敌友问题",
+      "summary": "锚点把“谁是敌人、谁是朋友”提出为革命的首要问题。",
+      "details": null,
+      "validFrom": "1925-12-01",
+      "validTo": null,
+      "knownAt": "1925-12-01",
+      "timeRelation": "at_writing",
+      "factInterpretation": "fact",
+      "confidence": "high",
+      "entityIds": [
+        "ent_mzd_001_concept_class_analysis"
+      ],
+      "placeIds": [],
+      "sourceIds": [
+        "p_mzd_001_0001"
+      ],
+      "editorialStatus": "approved",
+      "visibility": "public",
+      "structuredData": {
+        "slot": "background"
+      },
+      "editorNote": "样例只说明契约形态，不替代完整内容审核。"
+    },
+    {
+      "contextUnitId": "cu_mzd_001_reasoning",
+      "type": "reasoning_clue",
+      "title": "从社会关系中判断",
+      "summary": "锚点要求从经济地位和政治态度分析各阶级，避免脱离实际材料作抽象判断。",
+      "details": null,
+      "validFrom": "1925-12-01",
+      "validTo": null,
+      "knownAt": "1925-12-01",
+      "timeRelation": "at_writing",
+      "factInterpretation": "interpretation",
+      "confidence": "medium",
+      "entityIds": [
+        "ent_mzd_001_concept_class_analysis"
+      ],
+      "placeIds": [],
+      "sourceIds": [
+        "p_mzd_001_0002",
+        "p_mzd_001_0003"
+      ],
+      "editorialStatus": "approved",
+      "visibility": "public",
+      "structuredData": {
+        "slot": "thought"
+      },
+      "editorNote": "该单元只引用示例文章段落 ID。"
+    }
+  ],
+  "links": [
+    {
+      "anchorId": "anc_mzd_001_001",
+      "contextUnitId": "cu_mzd_001_question",
+      "role": "explains_background",
+      "relevance": 0.86,
+      "priority": 80,
+      "slotHints": [
+        "background"
+      ],
+      "sceneHints": [
+        "none"
+      ],
+      "editorNote": null
+    },
+    {
+      "anchorId": "anc_mzd_001_001",
+      "contextUnitId": "cu_mzd_001_reasoning",
+      "role": "supports_reasoning",
+      "relevance": 0.9,
+      "priority": 90,
+      "slotHints": [
+        "thought"
+      ],
+      "sceneHints": [
+        "none"
+      ],
+      "editorNote": null
+    }
+  ]
+}

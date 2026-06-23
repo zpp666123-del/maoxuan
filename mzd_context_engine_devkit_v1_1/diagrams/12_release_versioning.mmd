@@ -1,0 +1,14 @@
+﻿flowchart LR
+  R[Immutable Release]
+  A[ArticleVersion]
+  C[ContextPackVersion]
+  P[PromptBundleVersion]
+  W[WorkflowVersion]
+  S[GenerationRunSetVersion]
+  R --> A
+  R --> C
+  R --> P
+  R --> W
+  R --> S
+  RS[ReadingSession] -->|binds releaseId| R
+  GR[GenerationRun] -->|records exact versions| R

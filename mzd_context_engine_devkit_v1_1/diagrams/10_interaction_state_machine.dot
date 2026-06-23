@@ -1,0 +1,39 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.4", ranksep="0.55", label="交互与槽位状态机", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=ellipse, style="filled", fillcolor="#F8FAFC", color="#64748B", fontsize=10, margin="0.12,0.08"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=8];
+
+  idle [label="IDLE\n稳定内容", fillcolor="#DCFCE7", color="#16A34A"];
+  accepted [label="ACCEPTED"];
+  planning [label="PLANNING", fillcolor="#FEE2E2", color="#DC2626"];
+  retrieving [label="RETRIEVING", fillcolor="#DBEAFE", color="#2563EB"];
+  generating [label="GENERATING", fillcolor="#FAF5FF", color="#9333EA"];
+  validating [label="VALIDATING", fillcolor="#FEF3C7", color="#D97706"];
+  streaming [label="STREAMING\npartial blocks"];
+  completed [label="COMPLETED\ncommitted", fillcolor="#DCFCE7", color="#16A34A"];
+  degraded [label="DEGRADED\n运行记录/部分结果", fillcolor="#FEF3C7", color="#D97706"];
+  failed [label="FAILED", fillcolor="#FEE2E2", color="#DC2626"];
+  cancelled [label="CANCELLED\n被新 uiVersion 取代", fillcolor="#E2E8F0"];
+  unavailable [label="SLOT UNAVAILABLE\n资料不足", fillcolor="#F1F5F9"];
+
+  idle -> accepted [label="用户主动动作"];
+  accepted -> planning -> retrieving -> generating -> validating -> streaming -> completed -> idle;
+  validating -> generating [label="一次修复"];
+  validating -> unavailable [label="无法可靠修复"];
+  unavailable -> streaming [label="提交 unavailable"];
+  planning -> degraded [label="规划器失败\n保守计划"];
+  retrieving -> degraded [label="资料/服务故障"];
+  generating -> degraded [label="模型故障\n流式运行记录"];
+  degraded -> completed;
+  accepted -> cancelled [label="新交互"];
+  planning -> cancelled [label="新 uiVersion"];
+  retrieving -> cancelled;
+  generating -> cancelled;
+  validating -> cancelled;
+  planning -> failed [label="不可恢复"];
+  retrieving -> failed;
+  generating -> failed;
+  validating -> failed;
+  failed -> idle [label="重试/关闭"];
+  cancelled -> idle;
+}

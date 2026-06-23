@@ -1,0 +1,4 @@
+anchorId,contextUnitId,role,relevance,priority,slotHints,sceneHints,editorNote
+anc_xxx,cu_xxx,explains_background,0.90,1,background,timeline,
+anc_xxx,cu_xxx,explains_situation,0.90,1,situation,decision,
+anc_xxx,cu_xxx,supports_reasoning,0.90,1,thought,decision,

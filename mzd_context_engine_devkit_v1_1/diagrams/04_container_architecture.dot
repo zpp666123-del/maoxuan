@@ -1,0 +1,62 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=TB, nodesep="0.35", ranksep="0.55", label="Container / Module Architecture", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=10, margin="0.14,0.09"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=8];
+
+  subgraph cluster_client {
+    label="客户端"; color="#CBD5E1"; style="rounded";
+    reader [label="Reader Web\n原文 + 三槽位 + 场景", fillcolor="#FFFBEB", color="#B45309"];
+    studio [label="Admin Studio\n内容加工 / 审核 / 发布", fillcolor="#F0FDF4", color="#16A34A"];
+  }
+
+  gateway [label="API / BFF / SSE\n认证｜会话｜聚合｜限流｜uiVersion", fillcolor="#DBEAFE", color="#2563EB", width=5.5];
+
+  subgraph cluster_app {
+    label="应用模块（MVP 可为模块化单体）"; color="#CBD5E1"; style="rounded";
+    article [label="Article Module\n文章 / 段落 / 锚点 / Release"];
+    context [label="Context Module\nContextPack / Unit / Source / Link"];
+    generation_run [label="Generation Runtime\n生成 / 审核 / 发布 / 缓存"];
+    session [label="Reading Module\n会话 / 交互 / 反馈"];
+    scene [label="Scene Module\n声明式场景校验与适配"];
+    registry [label="Registry Module\nPrompt / Workflow / Model Policy"];
+    audit [label="Audit & Rights\n审计 / 权利 / 可见性"];
+  }
+
+  orchestrator [label="AI Orchestrator\nPlanner → Retriever → Slot Generators → Validator → Repair → Stream", fillcolor="#FEE2E2", color="#DC2626", width=6.0];
+  workers [label="AI Worker / Content Worker\n在线优先队列 + 离线批处理", fillcolor="#FAF5FF", color="#9333EA", width=4.6];
+  model [label="Model Gateway\n路由 / 超时 / 熔断 / 成本 / 结构化输出", fillcolor="#FEE2E2", color="#DC2626"];
+
+  subgraph cluster_data {
+    label="数据与基础设施"; color="#CBD5E1"; style="rounded";
+    pg [label="PostgreSQL\n权威内容 / 版本 / 运行 / 审计", shape=cylinder, fillcolor="#E0F2FE", color="#0284C7"];
+    redis [label="Redis\n运行记录 / 会话 / 幂等 / 状态", shape=cylinder, fillcolor="#FEE2E2", color="#DC2626"];
+    object [label="Object Storage\n导入文件 / 资产 / 导出", shape=cylinder, fillcolor="#F1F5F9"];
+    obs [label="Logs / Metrics / Traces", shape=cylinder, fillcolor="#F1F5F9"];
+  }
+
+  reader -> gateway;
+  studio -> gateway;
+  gateway -> article;
+  gateway -> context;
+  gateway -> generation_run;
+  gateway -> session;
+  gateway -> orchestrator;
+  orchestrator -> workers;
+  workers -> model;
+  orchestrator -> registry;
+  orchestrator -> context;
+  orchestrator -> scene;
+  article -> pg;
+  context -> pg;
+  generation_run -> pg;
+  session -> pg;
+  registry -> pg;
+  audit -> pg;
+  generation_run -> redis;
+  session -> redis;
+  orchestrator -> redis;
+  context -> object;
+  model -> obs;
+  gateway -> obs;
+  workers -> obs;
+}

@@ -1,0 +1,20 @@
+digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=TB, nodesep="0.35", ranksep="0.45", label="Prompt 分层与输入隔离", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=10, margin="0.16,0.10"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=8];
+
+  l0 [label="L0 核心宪法 Prompt\n选定版本｜ContextPack 优先｜时间边界｜来源｜槽位分离｜结构化输出", fillcolor="#FEE2E2", color="#DC2626", width=6.6];
+  l1 [label="L1 任务 Prompt\nPlanner｜背景｜处境｜思想｜场景｜问答｜Validator｜Repair", fillcolor="#FAF5FF", color="#9333EA", width=6.6];
+  l2 [label="L2 运行上下文\n文章元数据｜当前锚点｜邻近正文｜用户事件｜当前 UI｜检索材料｜允许 ID", fillcolor="#DBEAFE", color="#2563EB", width=6.6];
+  l3 [label="L3 输出契约\nPlanner Schema｜Card Schema｜Scene Schema｜Validation Schema", fillcolor="#DCFCE7", color="#16A34A", width=6.6];
+  model [label="模型任务\n只生成受控 JSON", shape=ellipse, fillcolor="#FFFBEB", color="#B45309"];
+  validate [label="确定性 + 语义校验\n不合格最多一次修复", fillcolor="#FEF3C7", color="#D97706"];
+  ui [label="固定 UI 槽位 / SSE committed", fillcolor="#E2E8F0"];
+
+  l0 -> l1 -> l2 -> l3 -> model -> validate -> ui;
+
+  user [label="用户选区/问题\n不可信数据", shape=note, fillcolor="#F1F5F9"];
+  source [label="原文/资料摘录\n不可信指令，仅数据", shape=note, fillcolor="#F1F5F9"];
+  user -> l2 [label="隔离注入"];
+  source -> l2 [label="隔离注入"];
+}

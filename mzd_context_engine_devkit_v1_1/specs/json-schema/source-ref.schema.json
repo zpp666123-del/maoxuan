@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source-ref.schema.json",
+  "title": "SourceRef",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sourceId", "title", "sourceType", "reliability", "visibility"],
+  "properties": {
+    "sourceId": {"type": "string", "pattern": "^src_[A-Za-z0-9_-]+$"},
+    "title": {"type": "string", "minLength": 1, "maxLength": 300},
+    "sourceType": {
+      "type": "string",
+      "enum": ["canonical_text", "archive", "book", "article", "official_record", "memoir", "map", "dataset", "editorial_note", "other"]
+    },
+    "creator": {"type": ["string", "null"], "maxLength": 200},
+    "publicationDate": {"type": ["string", "null"], "maxLength": 32},
+    "locator": {"type": ["string", "null"], "maxLength": 200},
+    "citationLabel": {"type": ["string", "null"], "maxLength": 300},
+    "reliability": {"type": "string", "enum": ["A", "B", "C", "D"]},
+    "rightsStatus": {
+      "type": "string",
+      "enum": ["public", "licensed_public", "internal_only", "restricted_excerpt", "unknown"],
+      "default": "unknown"
+    },
+    "visibility": {"type": "string", "enum": ["public", "internal", "private"]},
+    "notes": {"type": ["string", "null"], "maxLength": 1000}
+  }
+}

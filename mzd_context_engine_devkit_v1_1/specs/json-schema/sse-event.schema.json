@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sse-event.schema.json",
+  "title": "SseEventEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["eventId", "eventType", "interactionId", "uiVersion", "timestamp", "data"],
+  "properties": {
+    "eventId": {"type": "integer", "minimum": 1},
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "interaction.accepted", "plan.committed", "slot.started", "slot.block", "slot.committed",
+        "slot.unavailable", "scene.started", "scene.committed", "warning", "interaction.degraded",
+        "interaction.completed", "interaction.failed", "interaction.cancelled", "heartbeat"
+      ]
+    },
+    "interactionId": {"type": "string", "pattern": "^int_[A-Za-z0-9_-]+$"},
+    "uiVersion": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "data": {"type": "object", "additionalProperties": true}
+  }
+}

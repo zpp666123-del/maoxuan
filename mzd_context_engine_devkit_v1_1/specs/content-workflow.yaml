@@ -1,0 +1,116 @@
+version: "1.1.0"
+name: historical-context-content-production
+status: published
+
+states:
+  article:
+    - draft
+    - text_review
+    - context_building
+    - historical_review
+    - thought_review
+    - ready_to_publish
+    - published
+    - archived
+  context_unit:
+    - machine_candidate
+    - draft
+    - approved
+    - rejected
+    - archived
+  prompt_workflow:
+    - draft
+    - evaluated
+    - published
+    - archived
+
+workflows:
+  import_article:
+    steps:
+      - upload_or_submit_text
+      - register_canonical_edition
+      - normalize_format_without_rewriting
+      - segment_paragraphs
+      - assign_stable_paragraph_ids
+      - compute_text_hash
+      - run_format_checks
+      - editor_confirm
+      - create_article_version_draft
+
+  build_anchors:
+    steps:
+      - generate_anchor_candidates:
+          prompt: anchor_suggester@1.1.0
+          optional: true
+      - editor_define_boundaries
+      - validate_full_coverage
+      - validate_no_overlap
+      - enter_core_question_and_function
+      - reviewer_confirm
+
+  build_context_pack:
+    steps:
+      - register_article_level_question
+      - build_minimal_timeline
+      - register_sources
+      - extract_context_unit_candidates:
+          prompt: candidate_context_extractor@1.1.0
+      - editor_accept_modify_reject_candidates
+      - create_entities_and_places
+      - link_units_to_anchors
+      - define_time_policy
+      - detect_gaps:
+          prompt: context_gap_detector@1.1.0
+      - resolve_blocking_gaps
+      - submit_historical_review
+
+  review_context_pack:
+    steps:
+      - historical_fact_and_time_review
+      - source_and_rights_review
+      - thought_and_text_alignment_review
+      - change_requests_if_needed
+      - approve_context_pack_version
+
+  evaluate_prompt_workflow:
+    steps:
+      - select_prompt_bundle_and_workflow_version
+      - run_golden_set_with_real_model
+      - run_deterministic_schema_checks
+      - run_semantic_eval
+      - compare_generation_runs_with_previous_release
+      - reviewer_preview_in_reader
+      - publish_prompt_and_workflow_versions
+
+  publish_release:
+    preconditions:
+      - article_version_approved
+      - context_pack_version_approved
+      - prompt_bundle_published
+      - workflow_published
+      - quality_thresholds_passed
+      - rights_check_passed
+      - no_blocking_gaps
+    steps:
+      - create_immutable_release
+      - warm_article_cache
+      - run_release_smoke_with_real_model
+      - atomically_switch_public_pointer
+      - write_audit_log
+      - notify_team
+    rollback:
+      - switch_pointer_to_previous_release
+      - invalidate_new_article_cache
+      - preserve_failed_release_for_audit
+
+  feedback_repair:
+    steps:
+      - triage_feedback
+      - link_to_generation_run
+      - classify_root_cause
+      - choose_fix_target:
+          choices: [context_unit, anchor_link, prompt, workflow, renderer, source]
+      - implement_fix_in_new_version
+      - add_regression_test
+      - review_and_publish
+      - close_feedback

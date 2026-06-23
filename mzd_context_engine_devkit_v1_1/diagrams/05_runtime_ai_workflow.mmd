@@ -1,0 +1,21 @@
+﻿flowchart TD
+  A[InteractionEvent] --> B[规范化 / 授权 / 幂等 / 版本检查]
+  B --> C[最小更新规划器]
+  C --> D[按 scope、slot、timePolicy 检索 ContextPack]
+  D --> E[组装隔离 Prompt 输入]
+  E --> F1[背景生成器]
+  E --> F2[处境生成器]
+  E --> F3[思想生成器]
+  F1 & F2 & F3 --> G[确定性校验]
+  G --> H{通过?}
+  H -->|否| I[语义校验 / 一次定向修复]
+  I --> J{可提交?}
+  H -->|是| K[语义块 SSE 提交]
+  J -->|是| K
+  J -->|否| L[槽位 unavailable 或运行记录回退]
+  C --> M{需要场景?}
+  M -->|是| N[场景规划与数据生成]
+  N --> O[仅允许 ContextPack ID 的确定性校验]
+  O --> K
+  M -->|否| K
+  K --> P[记录 GenerationRun + 动态缓存]

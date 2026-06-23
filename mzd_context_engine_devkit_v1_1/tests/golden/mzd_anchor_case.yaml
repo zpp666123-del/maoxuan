@@ -1,0 +1,38 @@
+id: golden_mzd_001_anchor_001
+version: "1.0.0"
+status: corpus_sample
+articleId: art_mzd_001
+anchorId: anc_mzd_001_001
+mode: framework_stream
+interaction:
+  eventType: text_selected
+  paragraphId: p_mzd_001_0002
+  selectionText: 经济地位及其对于革命的态度
+allowedContextUnitIds:
+  - cu_mzd_001_question
+  - cu_mzd_001_reasoning
+allowedSourceIds:
+  - p_mzd_001_0001
+  - p_mzd_001_0002
+  - p_mzd_001_0003
+expectedPlanner:
+  scope: selection
+  updateSlots: [thought]
+  keepSlots: [background, situation]
+  sceneType: none
+  timePolicy: freeze_at_article_date
+expectedQualities:
+  background:
+    action: keep
+  situation:
+    action: keep
+  thought:
+    mustContainReasoningStages: [问题, 依据, 判断]
+    sourceIdsSubsetOf: [p_mzd_001_0001, p_mzd_001_0002, p_mzd_001_0003]
+scoring:
+  grounding: 0.30
+  timeBoundary: 0.20
+  slotSeparation: 0.20
+  anchorRelevance: 0.20
+  clarityAndDensity: 0.10
+passThreshold: 0.85

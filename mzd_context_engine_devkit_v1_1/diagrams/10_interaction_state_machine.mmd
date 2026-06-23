@@ -1,0 +1,21 @@
+﻿stateDiagram-v2
+  [*] --> Idle
+  Idle --> LoadingGenerationRun: anchor_changed
+  LoadingGenerationRun --> Ready: generation_run_loaded
+  LoadingGenerationRun --> Ready: generation_run_missing / keep current
+  Ready --> Planning: click/select/mode/question
+  Planning --> Retrieving: plan_valid
+  Planning --> Fallback: plan_timeout/error
+  Retrieving --> Generating: context_ready
+  Retrieving --> Unavailable: insufficient_context
+  Generating --> Validating: candidates_ready
+  Validating --> Repairing: repair_needed
+  Repairing --> Validating: repaired_once
+  Validating --> Streaming: pass
+  Validating --> Unavailable: unrecoverable
+  Streaming --> Committed: slot/scene commits
+  Streaming --> Cancelled: newer uiVersion
+  Committed --> Ready
+  Fallback --> Ready
+  Unavailable --> Ready
+  Cancelled --> Ready

@@ -1,0 +1,24 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.4", ranksep="0.55", label="不可变 Release 与版本组合", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=10, margin="0.16,0.10"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=8];
+
+  av [label="ArticleVersion\n选定版本正文 + 段落 + 锚点", fillcolor="#FFFBEB", color="#B45309"];
+  cp [label="ContextPackVersion\n情境单元 + 来源 + 链接 + 时间政策", fillcolor="#DBEAFE", color="#2563EB"];
+  pb [label="PromptBundleVersion\n所有已发布任务 Prompt", fillcolor="#FEE2E2", color="#DC2626"];
+  wf [label="WorkflowVersion\n节点 / 分支 / 超时 / 回退", fillcolor="#FAF5FF", color="#9333EA"];
+  ss [label="GenerationRunSet\n各锚点 × 模式的审核运行记录", fillcolor="#F0FDF4", color="#16A34A"];
+  rel [label="Release\n不可变组合 + 发布者 + 时间 + 质量报告", fillcolor="#DCFCE7", color="#16A34A", penwidth=2];
+  cache [label="缓存预热", fillcolor="#E2E8F0"];
+  pointer [label="Article.currentReleaseId\n原子切换", fillcolor="#E2E8F0"];
+  sessions [label="阅读会话绑定 releaseId\n阅读中内容不漂移", fillcolor="#FFFBEB", color="#B45309"];
+  old [label="旧 Release\n继续可读 / 可回滚", fillcolor="#F1F5F9"];
+
+  av -> rel;
+  cp -> rel;
+  pb -> rel;
+  wf -> rel;
+  ss -> rel;
+  rel -> cache -> pointer -> sessions;
+  pointer -> old [label="保留历史", style=dashed];
+}

@@ -1,0 +1,29 @@
+digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", nodesep="0.25", ranksep="0.28", label="文章历史情境阅读页：固定槽位框架", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=12, margin="0.16,0.10"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=10];
+
+  header [label="文章定位条\n标题｜时间｜地点｜文体/对象｜核心问题｜阅读模式", fillcolor="#E2E8F0", width=8.6];
+  text [label="原文阅读区\n\n选定版本正文\n当前锚点高亮\n人物 / 地点 / 事件 / 概念可点击\n文本可选择\n\n原文始终是中心", width=4.9, height=3.0, fillcolor="#FFFBEB", color="#B45309"];
+  bg [label="历史背景\n此前如何走到这里\n1–3 个最相关前置节点", width=3.2, fillcolor="#EFF6FF", color="#2563EB"];
+  sit [label="当时处境\n写作时点难在哪里\n力量｜约束｜争论｜选项｜未知", width=3.2, fillcolor="#F0FDF4", color="#16A34A"];
+  th [label="思想与推理\n问题 → 依据 → 判断 → 方法", width=3.2, fillcolor="#FAF5FF", color="#9333EA"];
+  scene [label="条件式动态场景\n时间线 / 决策路径 / 地图 / 关系图 / none\n只有明显提高理解时出现", width=8.6, fillcolor="#F8FAFC"];
+  tray [label="轻交互条\n模式切换｜围绕本段提问｜轻量来源｜反馈", width=8.6, fillcolor="#E2E8F0"];
+  ai [label="AI 编排器\n根据用户动作决定最小更新\n将语义块流式填入固定槽位", shape=ellipse, fillcolor="#FEE2E2", color="#DC2626"];
+
+  {rank=same; text; bg;}
+  header -> text [style=invis];
+  header -> bg [style=invis];
+  bg -> sit [style=invis];
+  sit -> th [style=invis];
+  text -> scene [style=invis];
+  th -> scene [style=invis];
+  scene -> tray [style=invis];
+
+  ai -> bg [label="按需更新", color="#DC2626"];
+  ai -> sit [label="按需更新", color="#DC2626"];
+  ai -> th [label="按需更新", color="#DC2626"];
+  ai -> scene [label="选择类型 + 填数据", color="#DC2626"];
+  text -> ai [label="滚动 / 点击 / 选中 / 提问", color="#B45309"];
+}

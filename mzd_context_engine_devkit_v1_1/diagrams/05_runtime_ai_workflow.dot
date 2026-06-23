@@ -1,0 +1,41 @@
+digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.35", rankdir=LR, nodesep="0.32", ranksep="0.5", label="实时 AI 编排工作流：只更新必要槽位", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=9.5, margin="0.14,0.09"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.65, fontsize=8];
+
+  event [label="用户事件\n点击 / 选中 / 模式 / 提问", fillcolor="#FFFBEB", color="#B45309"];
+  norm [label="1 事件规范化\n权限 / release / anchor / uiVersion"];
+  plan [label="2 Planner\nupdateSlots / keepSlots\n检索目标 / 场景 / 时间政策", fillcolor="#FEE2E2", color="#DC2626"];
+  retrieve [label="3 Context Retrieval\n正文 + 人工链接 + 时间过滤 + 重排", fillcolor="#DBEAFE", color="#2563EB"];
+  assemble [label="4 Prompt Assembly\n系统规则 / 任务 / 数据隔离"];
+
+  bg [label="5A 背景生成\n仅计划时", fillcolor="#EFF6FF", color="#2563EB"];
+  sit [label="5B 处境生成\n仅计划时", fillcolor="#F0FDF4", color="#16A34A"];
+  th [label="5C 思想生成\n仅计划时", fillcolor="#FAF5FF", color="#9333EA"];
+
+  det [label="6 确定性校验\nSchema / source / 日期 / 长度 / 重复"];
+  sem [label="7 语义校验\n贴合原文 / 槽位分离 / 后见泄漏"];
+  repair [label="8 一次修复\n仍失败则 unavailable", fillcolor="#FEF3C7", color="#D97706"];
+  stream [label="9 语义块 SSE\nblock → committed", fillcolor="#DCFCE7", color="#16A34A"];
+  scene [label="10 场景\n选择类型 → 回填受控 ID → 校验"];
+  persist [label="11 记录与缓存\nGenerationRun / 动态缓存 / 指标"];
+  ui [label="固定界面槽位\n旧内容保留，原子替换", fillcolor="#E2E8F0"];
+
+  event -> norm -> plan -> retrieve -> assemble;
+  assemble -> bg;
+  assemble -> sit;
+  assemble -> th;
+  bg -> det;
+  sit -> det;
+  th -> det;
+  det -> sem;
+  sem -> stream [label="pass"];
+  sem -> repair [label="repair"];
+  repair -> stream;
+  plan -> scene [label="sceneType != none"];
+  retrieve -> scene;
+  scene -> stream [label="scene.committed"];
+  stream -> ui;
+  stream -> persist;
+  sem -> persist [label="unavailable / failed", style=dashed];
+}

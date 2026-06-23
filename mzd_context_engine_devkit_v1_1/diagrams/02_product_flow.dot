@@ -1,0 +1,35 @@
+﻿digraph G {
+  graph [fontname="Noto Sans CJK SC", bgcolor="white", pad="0.3", rankdir=LR, nodesep="0.35", ranksep="0.5", label="产品主流程", labelloc="t", fontsize=20];
+  node [fontname="Noto Sans CJK SC", shape=box, style="rounded,filled", fillcolor="#F8FAFC", color="#64748B", fontsize=11, margin="0.16,0.10"];
+  edge [fontname="Noto Sans CJK SC", color="#64748B", arrowsize=0.7, fontsize=9];
+
+  entry [label="专题 / 搜索 / 文章列表", fillcolor="#E2E8F0"];
+  article [label="进入文章\n加载正文与元数据", fillcolor="#FFFBEB", color="#B45309"];
+  anchor [label="识别当前锚点"];
+  snap [label="加载已流式运行记录\n三槽位 + 场景", fillcolor="#DBEAFE", color="#2563EB"];
+  read [label="继续阅读原文", fillcolor="#FFFBEB", color="#B45309"];
+
+  scroll [label="滚动到新锚点\n快路径"];
+  click [label="点击段落/实体\n慢路径"];
+  select [label="选择文字\n慢路径"];
+  mode [label="切换模式\n时间政策"];
+  ask [label="围绕本段提问\n局部问答"];
+
+  ai [label="Prompt + Workflow\n规划 → 检索 → 生成 → 校验 → 流式提交", fillcolor="#FEE2E2", color="#DC2626"];
+  ui [label="只更新必要槽位\n按需呈现场景", fillcolor="#DCFCE7", color="#16A34A"];
+  feedback [label="反馈 / 继续下一锚点 / 返回文章列表", fillcolor="#E2E8F0"];
+
+  entry -> article -> anchor -> snap -> read;
+  read -> scroll;
+  read -> click;
+  read -> select;
+  read -> mode;
+  read -> ask;
+  scroll -> snap [label="缓存运行记录"];
+  click -> ai;
+  select -> ai;
+  mode -> ai;
+  ask -> ai;
+  ai -> ui -> read;
+  read -> feedback;
+}

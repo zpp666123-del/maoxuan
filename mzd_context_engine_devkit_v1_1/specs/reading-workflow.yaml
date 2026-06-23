@@ -1,0 +1,148 @@
+version: "1.1.0"
+name: historical-context-reading-runtime
+status: published
+
+principles:
+  - canonical_text_is_primary
+  - fixed_ui_slots
+  - curated_context_first
+  - minimum_necessary_update
+  - time_filtering_before_generation
+  - semantic_blocks_before_commit
+  - validate_before_visibility
+  - one_repair_maximum
+  - real_llm_required
+  - every_run_is_traceable
+
+workflows:
+  passive_anchor_change:
+    triggers: [anchor_changed]
+    path: stream
+    debounce_ms: 450
+    timeout_ms: 20000
+    steps:
+      - id: normalize
+        uses: normalize_interaction
+      - id: resolve
+        uses: resolve_release_and_anchor
+      - id: assemble
+        uses: assemble_isolated_prompt_inputs
+      - id: generate_slots
+        parallel: true
+        foreach: [background, situation, thought]
+        uses: generate_slot_with_real_llm
+      - id: stream_slots
+        uses: stream_semantic_blocks_and_commits
+      - id: persist
+        uses: persist_generation_run
+    fallback:
+      on_missing_model_config:
+        - emit_interaction_failed
+      on_error:
+        - keep_canonical_reader_available
+        - emit_interaction_failed
+
+  focused_reading:
+    triggers: [paragraph_clicked, text_selected, entity_clicked]
+    path: deep
+    timeout_ms: 20000
+    steps:
+      - id: normalize
+        uses: normalize_interaction
+      - id: resolve
+        uses: resolve_release_and_anchor
+      - id: plan
+        uses: plan_minimum_update
+        prompt: interaction_planner@1.1.0
+        output_schema: json-schema/planner-output.schema.json
+        timeout_ms: 2500
+        fallback: conservative_rule_plan
+      - id: retrieve
+        uses: retrieve_curated_context
+        inputs: [plan.retrievalTargets, plan.timePolicy]
+      - id: assemble
+        uses: assemble_isolated_prompt_inputs
+      - id: generate_slots
+        parallel: true
+        foreach: plan.updateSlots
+        uses: generate_slot_with_real_llm
+        prompt_map:
+          background: background_card@1.1.0
+          situation: situation_card@1.1.0
+          thought: thought_card@1.1.0
+        output_schema: json-schema/ui-card.schema.json
+      - id: validate_deterministic
+        uses: validate_slots_deterministic
+      - id: validate_semantic
+        uses: validate_slots_semantic
+        prompt: semantic_validator@1.1.0
+        condition: risk_policy_requires_semantic_review
+      - id: repair
+        uses: repair_failed_slots_once
+        prompt: repair_card@1.1.0
+        max_attempts: 1
+      - id: stream_slots
+        uses: stream_semantic_blocks_and_commits
+      - id: persist
+        uses: persist_generation_run
+    cancellation:
+      cancel_when_newer_ui_version_arrives: true
+      discard_late_results: true
+    fallback:
+      on_slot_failure: emit_slot_unavailable
+      on_model_outage: emit_interaction_failed
+
+  scoped_question:
+    triggers: [question_submitted]
+    path: deep
+    timeout_ms: 25000
+    steps:
+      - normalize_interaction
+      - classify_question_scope
+      - apply_scope_and_time_policy
+      - retrieve_canonical_text_and_context
+      - generate_scoped_answer:
+          prompt: scoped_qa@1.1.0
+      - validate_answer_sources_and_time
+      - stream_answer_semantic_blocks
+      - propose_slot_updates_if_relevant
+      - persist_generation_run
+    fallback:
+      out_of_scope: explain_scope_and_offer_reframe
+      insufficient_context: return_context_insufficient
+
+planner_contract:
+  coverage_rule: updateSlots + keepSlots must equal [background, situation, thought]
+  no_overlap: true
+  max_scene_types: 1
+
+quality_gates:
+  deterministic:
+    - json_schema_valid
+    - source_ids_exist_and_visible
+    - time_policy_satisfied
+    - no_unapproved_coordinates_dates_relations
+    - length_and_count_limits
+    - no_html_or_script
+    - no_duplicate_points_across_slots
+  semantic:
+    - anchored_to_current_text
+    - slot_semantics_separated
+    - no_future_leakage
+    - no_unsupported_specific_claims
+    - fact_interpretation_separated
+    - concise_non_sloganized_language
+    - unavailable_when_insufficient
+
+observability:
+  trace_fields:
+    - requestId
+    - sessionId
+    - interactionId
+    - releaseId
+    - articleId
+    - anchorId
+    - uiVersion
+    - workflowVersion
+    - promptBundleVersion
+    - modelPolicy

@@ -1,0 +1,16 @@
+erDiagram
+  ARTICLE ||--o{ ARTICLE_VERSION : has
+  ARTICLE_VERSION ||--o{ PARAGRAPH : contains
+  ARTICLE_VERSION ||--o{ ANCHOR : partitions
+  ARTICLE_VERSION ||--o{ CONTEXT_PACK : contextualized_by
+  CONTEXT_PACK ||--o{ CONTEXT_UNIT : contains
+  CONTEXT_PACK ||--o{ SOURCE_REF : cites
+  CONTEXT_PACK ||--o{ ENTITY : defines
+  CONTEXT_PACK ||--o{ PLACE : defines
+  ANCHOR ||--o{ ANCHOR_CONTEXT_LINK : links
+  CONTEXT_UNIT ||--o{ ANCHOR_CONTEXT_LINK : linked_by
+  RELEASE }o--|| ARTICLE_VERSION : locks
+  RELEASE }o--|| CONTEXT_PACK : locks
+  RELEASE ||--o{ READING_SESSION : serves
+  READING_SESSION ||--o{ INTERACTION : receives
+  INTERACTION ||--o| GENERATION_RUN : produces

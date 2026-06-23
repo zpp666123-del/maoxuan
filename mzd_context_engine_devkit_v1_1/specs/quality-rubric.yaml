@@ -1,0 +1,68 @@
+version: "1.1.0"
+name: historical-context-quality-rubric
+
+scales:
+  default:
+    min: 1
+    max: 5
+
+criteria:
+  relevance:
+    weight: 0.18
+    description: 当前卡片是否直接解释当前锚点或选区。
+  historical_accuracy:
+    weight: 0.20
+    description: 具体事实是否与批准资料一致。
+    critical: true
+  time_boundary:
+    weight: 0.16
+    description: 是否区分此前、当时和后来，避免后见泄漏。
+    critical: true
+  slot_separation:
+    weight: 0.10
+    description: 背景、处境、思想是否各司其职。
+  reasoning_clarity:
+    weight: 0.12
+    description: 问题、依据、判断和方法是否清楚。
+  source_coverage:
+    weight: 0.10
+    description: 具体事实是否有 sourceIds。
+    critical: true
+  information_density:
+    weight: 0.08
+    description: 是否短而有用，不空泛、不冗长。
+  uncertainty_expression:
+    weight: 0.06
+    description: 事实、解释、推断和未知是否区分。
+
+release_thresholds:
+  average_score_min: 4.0
+  historical_accuracy_min: 4.5
+  time_boundary_min: 4.5
+  source_coverage_min: 4.5
+  schema_valid_rate: 1.0
+  unsupported_specific_claim_rate_max: 0.01
+  future_leak_rate_max: 0.02
+  slot_confusion_rate_max: 0.05
+  slot_duplication_rate_max: 0.08
+  critical_golden_set_pass_rate: 1.0
+  overall_golden_set_pass_rate_min: 0.90
+
+issue_severity:
+  P0:
+    - canonical_text_changed
+    - fabricated_source
+    - major_historical_error
+    - future_result_as_current_knowledge
+    - restricted_content_exposure
+    - prompt_injection_bypass
+  P1:
+    - missing_core_constraint
+    - thought_not_aligned_with_text
+    - wrong_scene_relationship
+    - extensive_slot_duplication
+  P2:
+    - verbose_wording
+    - minor_source_display_issue
+    - visual_label_crowding
+    - secondary_context_gap
