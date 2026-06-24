@@ -21,12 +21,12 @@
       </label>
     </div>
     <div class="chapter-pill" aria-live="polite">
-      <button type="button" class="mini-icon-button" aria-label="上一篇"><span data-icon="chevron-left"></span></button>
+      <button type="button" class="mini-icon-button" id="prev-article" aria-label="上一篇"><span data-icon="chevron-left"></span></button>
       <div>
         <h1 id="title">加载中</h1>
         <p id="meta" class="meta"></p>
       </div>
-      <button type="button" class="mini-icon-button" aria-label="下一篇"><span data-icon="chevron-right"></span></button>
+      <button type="button" class="mini-icon-button" id="next-article" aria-label="下一篇"><span data-icon="chevron-right"></span></button>
     </div>
     <div class="top-actions">
       <div class="runtime-chip" aria-live="polite">
@@ -41,13 +41,6 @@
   </header>
 
   <main class="workspace reading-workspace">
-    <nav class="tool-dock left-dock" aria-label="阅读工具">
-      <button type="button" class="name-button primary" data-workflow="article_overview" data-target-type="article" data-target-label="全篇总览"><span data-icon="book"></span><span>全篇</span></button>
-      <button type="button" class="name-button" data-panel="timeline" data-workflow="timeline" data-target-type="timeline" data-target-label="进度时间线"><span data-icon="clock"></span><span>时间线</span></button>
-      <button type="button" class="name-button" data-workflow="figure_network" data-target-type="person" data-target-label="关键人物"><span data-icon="user"></span><span>人物</span></button>
-      <button type="button" class="name-button" data-workflow="event_chain" data-target-type="event" data-target-label="关键事件"><span data-icon="flag"></span><span>事件</span></button>
-    </nav>
-
     <section class="reader-panel reading-stage" aria-labelledby="reader-title">
       <div class="section-heading reader-heading">
         <div>
@@ -66,20 +59,25 @@
           <input id="question" name="question" autocomplete="off" placeholder="围绕当前段落提问" />
           <button type="submit">生成</button>
         </form>
-
-        <div class="selection-actions">
-          <button id="analyze" type="button" disabled>解释选区</button>
-          <button id="open-anchors" type="button">锚点</button>
-          <span id="status" role="status">等待模型配置</span>
-        </div>
+        <span id="status" class="reader-status" role="status"></span>
+      </div>
+      <div id="selection-toolbar" class="selection-toolbar" hidden>
+        <button id="analyze" type="button" disabled>解释选区</button>
+        <button id="open-anchors" type="button">锚点</button>
       </div>
     </section>
 
+    <aside id="analysis-panel" class="analysis-panel" aria-label="文章分析">
+      <div class="analysis-loading" id="analysis-loading">
+        <span class="pulse" aria-hidden="true"></span>
+        <span>正在分析文章...</span>
+      </div>
+      <div id="analysis-content" class="analysis-content" hidden></div>
+    </aside>
+
     <nav class="tool-dock right-dock" aria-label="辅助工具">
+      <button type="button" class="name-button primary" data-workflow="article_overview" data-target-type="article" data-target-label="全篇总览"><span data-icon="book"></span><span>全篇</span></button>
       <button type="button" class="name-button is-active" data-map-panel><span data-icon="map"></span><span>地图</span></button>
-      <button type="button" class="name-button" data-workflow="illustration_prompt" data-target-type="illustration" data-target-label="插图方案"><span data-icon="image"></span><span>插图</span></button>
-      <button type="button" class="name-button" data-workflow="figure_network" data-target-type="person" data-target-label="关系网络"><span data-icon="network"></span><span>关系</span></button>
-      <button type="button" class="name-button" data-workflow="event_chain" data-target-type="event" data-target-label="判断转折点"><span data-icon="trend"></span><span>转折</span></button>
     </nav>
 
     <details id="debug-panel" class="debug-panel">
@@ -140,11 +138,11 @@
           <div class="instant-map-shell">
             <div id="history-map" class="history-map" aria-label="文章地图"></div>
             <div class="map-legend" aria-label="地图图例">
-              <span><i style="--dot:#4b9b5c"></i>思想观点</span>
-              <span><i style="--dot:#3c87bd"></i>人物活动</span>
-              <span><i style="--dot:#d0a12e"></i>组织建设</span>
-              <span><i style="--dot:#c95346"></i>战争行动</span>
-              <span><i style="--dot:#9659b9"></i>社会状况</span>
+              <span><i style="--dot:#386f90"></i>语义变量</span>
+              <span><i style="--dot:#9d3b2f"></i>篇章范围</span>
+              <span><i style="--dot:#8b6914"></i>时间线索</span>
+              <span><i style="--dot:#2f6f5e"></i>地点</span>
+              <span><i style="--dot:#b9873d"></i>关键词</span>
             </div>
             <p class="map-footnote"><span class="pulse" aria-hidden="true"></span>基于全文语义的实时地图语境 <span>最后更新：刚刚</span></p>
           </div>
@@ -167,26 +165,26 @@
       </div>
 
       <div id="modal-context" class="modal-section context-modal-grid" hidden>
-        <article class="context-card background" data-slot="background">
+        <article class="context-card writing-context" data-slot="writing_context">
           <header>
-            <span><i aria-hidden="true"></i>历史背景</span>
-            <small>此前如何走到这里</small>
+            <span><i aria-hidden="true"></i>写作背景</span>
+            <small>毛泽东何时何地写下此文</small>
           </header>
           <div class="card-body empty">等待生成</div>
         </article>
 
-        <article class="context-card situation" data-slot="situation">
+        <article class="context-card era-context" data-slot="era_context">
           <header>
-            <span><i aria-hidden="true"></i>当时处境</span>
-            <small>写作时点难在哪里</small>
+            <span><i aria-hidden="true"></i>时代背景</span>
+            <small>当时中国面临什么问题</small>
           </header>
           <div class="card-body empty">等待生成</div>
         </article>
 
-        <article class="context-card thought" data-slot="thought">
+        <article class="context-card core-argument" data-slot="core_argument">
           <header>
-            <span><i aria-hidden="true"></i>思想与推理</span>
-            <small>如何判断并导向方法</small>
+            <span><i aria-hidden="true"></i>核心论点</span>
+            <small>文章的核心主张与推理</small>
           </header>
           <div class="card-body empty">等待生成</div>
         </article>
@@ -205,8 +203,37 @@
       </header>
 
       <div class="settings-grid">
+        <section class="settings-section" aria-labelledby="appearance-settings-title">
+          <h3 id="appearance-settings-title">外观</h3>
+          <label>
+            正文字号
+            <input id="pref-font-size" name="fontSize" type="range" min="16" max="23" step="1" />
+          </label>
+          <label>
+            正文行距
+            <input id="pref-line-height" name="lineHeight" type="range" min="1.6" max="2.2" step="0.05" />
+          </label>
+          <label>
+            主题色调
+            <div class="theme-swatches" id="theme-swatches">
+              <button type="button" class="swatch active" data-theme="default" style="background:#f7f1e6" title="默认暖纸"></button>
+              <button type="button" class="swatch" data-theme="dark" style="background:#1a1a1a" title="深色"></button>
+              <button type="button" class="swatch" data-theme="green" style="background:#e8f0e6" title="护眼绿"></button>
+              <button type="button" class="swatch" data-theme="blue" style="background:#e6eef7" title="淡蓝"></button>
+            </div>
+          </label>
+          <label class="inline-option">
+            <input id="pref-auto-generate" name="autoGenerate" type="checkbox" />
+            进入文章后自动准备全篇与地图
+          </label>
+          <label class="inline-option">
+            <input id="pref-show-events" name="showEvents" type="checkbox" />
+            显示事件流
+          </label>
+        </section>
+
         <section class="settings-section" aria-labelledby="api-settings-title">
-          <h3 id="api-settings-title">API</h3>
+          <h3 id="api-settings-title">API 配置</h3>
           <label>
             Base URL
             <input id="api-base-url" name="baseUrl" autocomplete="off" placeholder="https://api.openai.com/v1" />
@@ -270,25 +297,23 @@
           <button id="api-save" type="button">保存 API</button>
           <p id="api-status" class="settings-status" role="status"></p>
         </section>
+      </div>
+    </form>
+  </dialog>
 
-        <section class="settings-section" aria-labelledby="reader-settings-title">
-          <h3 id="reader-settings-title">基础功能</h3>
-          <label>
-            正文字号
-            <input id="pref-font-size" name="fontSize" type="range" min="16" max="23" step="1" />
-          </label>
-          <label>
-            正文行距
-            <input id="pref-line-height" name="lineHeight" type="range" min="1.6" max="2.2" step="0.05" />
-          </label>
-          <label class="inline-option">
-            <input id="pref-auto-generate" name="autoGenerate" type="checkbox" />
-            进入文章后自动准备全篇与地图
-          </label>
-          <label class="inline-option">
-            <input id="pref-show-events" name="showEvents" type="checkbox" />
-            显示事件流
-          </label>
+  <dialog id="note-dialog" class="settings-dialog" aria-labelledby="note-dialog-title">
+    <form class="settings-panel" method="dialog">
+      <header class="settings-header">
+        <div>
+          <p class="eyebrow">Notes</p>
+          <h2 id="note-dialog-title">阅读笔记</h2>
+        </div>
+        <button id="note-dialog-close" class="icon-button" type="button" aria-label="关闭笔记" title="关闭"><span data-icon="close"></span></button>
+      </header>
+      <div class="settings-grid" style="grid-template-columns:1fr">
+        <section class="settings-section">
+          <textarea id="article-note" class="article-note" rows="14" placeholder="记录这一篇的阅读想法、疑问和待追问的问题"></textarea>
+          <p id="note-status" class="note-status">自动保存到本机</p>
         </section>
       </div>
     </form>

@@ -118,6 +118,97 @@ function setMapStatus(text) {
   if (node) node.textContent = text;
 }
 
+function renderAnalysisPanel(text) {
+  const panel = $("#analysis-content");
+  const loading = $("#analysis-loading");
+  if (!panel || !loading) return;
+  loading.hidden = true;
+  panel.hidden = false;
+  let html = "";
+  const lines = text.split("\n");
+  let section = "";
+  let collectLines = [];
+  const flush = () => {
+    if (section && collectLines.length) {
+      html += renderAnalysisSection(section, collectLines);
+      collectLines = [];
+    }
+    section = "";
+  };
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const m = trimmed.match(/^(标题|摘要|发现|建议点击|地图变量|插图提示)\s*[：:]\s*(.*)$/);
+    if (m) {
+      flush();
+      section = m[1];
+      if (m[2]) collectLines.push(m[2]);
+      continue;
+    }
+    if (trimmed.startsWith("- ") || trimmed.startsWith("· ")) {
+      collectLines.push(trimmed.slice(2));
+      continue;
+    }
+    collectLines.push(trimmed);
+  }
+  flush();
+  if (!html) html = `<p class="summary">${escapeHtml(text)}</p>`;
+  panel.innerHTML = html;
+  panel.scrollTop = 0;
+}
+
+function renderAnalysisSection(title, lines) {
+  const body = lines.join("\n");
+  switch (title) {
+    case "标题":
+      return `<h2>${escapeHtml(body)}</h2>`;
+    case "摘要":
+      return `<p class="summary">${escapeHtml(body)}</p>`;
+    case "发现":
+      return renderAnalysisDiscoveries(lines);
+    case "建议点击":
+      return "";
+    case "地图变量":
+      return "";
+    case "插图提示":
+      return "";
+    default:
+      return `<p class="summary">${escapeHtml(body)}</p>`;
+  }
+}
+
+function renderAnalysisDiscoveries(lines) {
+  let html = '<div class="context-cards">';
+  for (const line of lines) {
+    const parts = line.split("｜").map((s) => s.trim());
+    if (parts.length < 2) {
+      html += `<div class="discovery-card"><div class="card-desc">${escapeHtml(line)}</div></div>`;
+      continue;
+    }
+    const kind = parts[0];
+    const name = parts[1];
+    const desc = parts[2] || "";
+    const kindClass = kind.includes("组织") ? "org" : kind.includes("阶级") ? "event" : kind.includes("人物") ? "person" : kind.includes("地点") ? "place" : "event";
+    html += `<div class="discovery-card">
+      <div class="card-title"><span class="kind-tag ${kindClass}">${escapeHtml(kind)}</span>${escapeHtml(name)}</div>
+      <div class="card-desc">${escapeHtml(desc)}</div>
+    </div>`;
+  }
+  html += "</div>";
+  return html;
+}
+
+function renderContextCardsInline(writingContext, eraContext, coreArgument) {
+  const panel = $("#analysis-content");
+  if (!panel) return;
+  let html = '<div class="context-cards">';
+  if (writingContext) html += `<div class="context-card-inline"><h4>写作背景</h4><p>${escapeHtml(writingContext)}</p></div>`;
+  if (eraContext) html += `<div class="context-card-inline situation"><h4>时代背景</h4><p>${escapeHtml(eraContext)}</p></div>`;
+  if (coreArgument) html += `<div class="context-card-inline argument"><h4>核心论点</h4><p>${escapeHtml(coreArgument)}</p></div>`;
+  html += "</div>";
+  panel.innerHTML += html;
+}
+
 function openToolDialog(title, options = {}) {
   $("#tool-dialog-title").textContent = title;
   toolDialog.classList.toggle("map-dialog", Boolean(options.showMap));
@@ -209,6 +300,14 @@ function applyPrefs() {
   $("#pref-line-height").value = String(state.prefs.lineHeight);
   $("#pref-auto-generate").checked = Boolean(state.prefs.autoGenerate);
   $("#pref-show-events").checked = Boolean(state.prefs.showEvents);
+  if (state.prefs.theme) {
+    applyTheme(state.prefs.theme);
+    const active = document.querySelector(`.swatch[data-theme="${state.prefs.theme}"]`);
+    if (active) {
+      document.querySelectorAll(".swatch").forEach((s) => s.classList.remove("active"));
+      active.classList.add("active");
+    }
+  }
 }
 
 function cardForSlot(slot) {
@@ -356,19 +455,23 @@ function bindSettings() {
   $("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
   $("#tool-dialog-close").addEventListener("click", closeToolDialog);
   $("#search-open").addEventListener("click", () => openToolDialog("正文搜索", {showAgent: false, showSearch: true}));
-  $("#note-open").addEventListener("click", () => openToolDialog("阅读笔记", {showAgent: false, showNote: true}));
+  $("#note-open").addEventListener("click", async () => {
+    await loadApiSettings();
+    loadArticleNote();
+    noteDialog.showModal();
+  });
+  $("#note-dialog-close").addEventListener("click", () => noteDialog.close());
+  $("#article-note").addEventListener("input", saveArticleNote);
   $("#font-open").addEventListener("click", async () => {
     await loadApiSettings();
     $("#settings-dialog").showModal();
     window.requestAnimationFrame(() => {
-      const input = $("#pref-font-size");
-      input.focus();
-      input.scrollIntoView({block: "center", behavior: "smooth"});
+      const section = $(".settings-section[aria-labelledby='appearance-settings-title']");
+      if (section) section.scrollIntoView({block: "start", behavior: "smooth"});
     });
   });
   $("#open-anchors").addEventListener("click", () => openToolDialog("锚点", {showAgent: false, showTimeline: true}));
   $("#article-search").addEventListener("input", renderSearchResults);
-  $("#article-note").addEventListener("input", saveArticleNote);
   $("#map-keyword-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const input = $("#map-keyword");
@@ -400,6 +503,27 @@ function bindSettings() {
     applyPrefs();
     savePrefs();
   });
+
+  const themeSwatches = $("#theme-swatches");
+  if (themeSwatches) {
+    themeSwatches.addEventListener("click", (event) => {
+      const swatch = event.target.closest(".swatch");
+      if (!swatch) return;
+      themeSwatches.querySelectorAll(".swatch").forEach((s) => s.classList.remove("active"));
+      swatch.classList.add("active");
+      state.prefs.theme = swatch.dataset.theme;
+      applyTheme(swatch.dataset.theme);
+      savePrefs();
+    });
+  }
+}
+
+function applyTheme(theme) {
+  const root = document.documentElement;
+  root.classList.remove("theme-dark", "theme-green", "theme-blue");
+  if (theme === "dark") root.classList.add("theme-dark");
+  else if (theme === "green") root.classList.add("theme-green");
+  else if (theme === "blue") root.classList.add("theme-blue");
 }
 
 async function createReadingSession() {
@@ -545,6 +669,10 @@ async function loadArticle(summary) {
   $("#analyze").disabled = true;
   resetContextCards();
   resetAgent();
+  const analysisContent = $("#analysis-content");
+  const analysisLoading = $("#analysis-loading");
+  if (analysisContent) { analysisContent.hidden = true; analysisContent.innerHTML = ""; }
+  if (analysisLoading) { analysisLoading.hidden = false; analysisLoading.innerHTML = '<span class="pulse" aria-hidden="true"></span><span>正在分析文章...</span>'; }
   setRuntimeLabel("loading");
   statusNode.textContent = "正在加载文章";
 
@@ -558,8 +686,11 @@ async function loadArticle(summary) {
 
   setRuntimeLabel("ready");
   if (state.prefs.autoGenerate && state.apiReady) {
-    await submitInteraction("anchor_changed", {anchorId: state.anchorId, openDialog: false});
+    startWorkflow("article_overview", articleOverviewTarget());
     prewarmArticleWorkflows();
+    setTimeout(() => {
+      submitInteraction("anchor_changed", {anchorId: state.anchorId, openDialog: false, inline: true});
+    }, 800);
   } else if (state.prefs.autoGenerate) {
     setRuntimeLabel("api missing");
     statusNode.textContent = "请在设置里添加 API 后生成";
@@ -592,7 +723,7 @@ function workflowTargetFromButton(button) {
 function renderSubagent(name) {
   const chip = document.createElement("span");
   chip.className = "subagent-chip";
-  chip.textContent = name;
+  chip.textContent = formatSubagentName(name);
   subagentQueue.append(chip);
 }
 
@@ -615,7 +746,7 @@ function renderAgentImage(data) {
 function semanticAnchorLabel(anchor, index) {
   const title = anchor?.title || "";
   if (title.includes("注释")) return "文本注释";
-  const labels = ["核心命题", "社会阶层", "组织力量", "革命对象", "革命路线", "行动条件", "判断转折", "历史语境"];
+  const labels = ["核心命题", "写作背景", "组织力量", "革命对象", "革命路线", "行动条件", "判断转折", "时代背景"];
   return labels[index % labels.length];
 }
 
@@ -624,7 +755,7 @@ function semanticAnchorDescription(anchor, index) {
   const clean = title.replace(/^第\d+组[:：]\s*/, "");
   const descriptions = [
     "文章首先展开的核心问题",
-    "围绕社会关系形成的语义变量",
+    "写作时的社会环境与个人处境",
     "组织、力量与行动主体的关系",
     "敌友、对象与立场判断",
     "由分析导出的行动方向",
@@ -633,40 +764,6 @@ function semanticAnchorDescription(anchor, index) {
     "需要回到原文理解的历史背景",
   ];
   return clean && clean.length < 34 ? clean : descriptions[index % descriptions.length];
-}
-
-function buildMapVariables() {
-  if (!state.article) return [];
-  const anchors = state.article.anchors.slice(0, 8);
-  const center = [35.8, 104.2];
-  const radius = 4.8;
-  const variables = anchors.map((anchor, index) => {
-    const angle = (Math.PI * 2 * index) / Math.max(anchors.length, 1) - Math.PI / 3;
-    return {
-      id: anchor.anchorId,
-      label: semanticAnchorLabel(anchor, index),
-      description: semanticAnchorDescription(anchor, index),
-      sourceIds: anchor.paragraphIds,
-      lat: center[0] + Math.sin(angle) * radius * 0.72,
-      lng: center[1] + Math.cos(angle) * radius,
-      weight: anchor.paragraphIds.length,
-      kind: "semantic",
-    };
-  });
-  if (state.article.location || state.article.sectionTitle) {
-    const locationLabel = state.article.location && state.article.location.length <= 8 ? state.article.location : "";
-    variables.unshift({
-      id: "article_scope",
-      label: locationLabel || "篇章语境",
-      description: state.article.location || state.article.sectionTitle || "整篇文章的语义范围",
-      sourceIds: [],
-      lat: center[0],
-      lng: center[1],
-      weight: state.article.paragraphs.length,
-      kind: "scope",
-    });
-  }
-  return variables;
 }
 
 function clearMapLayers() {
@@ -679,6 +776,7 @@ function mapColor(variable) {
   if (variable.kind === "keyword") return "#b9873d";
   if (variable.kind === "地点") return "#2f6f5e";
   if (variable.kind === "区域" || variable.kind === "路线") return "#4f6696";
+  if (variable.kind === "time") return "#8b6914";
   if (variable.kind === "semantic") return "#386f90";
   return "#2f6f5e";
 }
@@ -708,17 +806,19 @@ function renderInstantMap() {
     target.innerHTML = '<div class="map-fallback">地图组件未加载，请刷新页面。</div>';
     return;
   }
-  if (!state.map.variables.length) {
-    state.map.variables = buildMapVariables();
-  }
   if (!state.map.instance) {
     state.map.instance = L.map(target, {
       zoomControl: false,
       attributionControl: false,
-      scrollWheelZoom: false,
+      scrollWheelZoom: true,
+      doubleClickZoom: true,
+      keyboard: true,
+      keyboardPanDelta: 120,
+      dragging: true,
+      touchZoom: true,
     }).setView([35.8, 104.2], 4);
     state.map.tileLayer = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 8,
+      maxZoom: 12,
       minZoom: 3,
       opacity: 0.62,
       crossOrigin: true,
@@ -727,6 +827,19 @@ function renderInstantMap() {
   }
   state.map.instance.invalidateSize();
   clearMapLayers();
+  let overlay = target.querySelector(".map-empty-overlay");
+  if (!state.map.variables.length) {
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "map-empty-overlay";
+      overlay.innerHTML = '<span>等待 AI 生成地图坐标...</span>';
+      target.appendChild(overlay);
+    }
+    renderMapVariableList();
+    setMapStatus("等待 AI");
+    return;
+  }
+  if (overlay) overlay.remove();
   const points = state.map.variables.map((item) => [item.lat, item.lng]);
   if (points.length > 1) {
     state.map.layers.push(
@@ -755,7 +868,7 @@ function renderInstantMap() {
     state.map.layers.push(marker);
   });
   if (points.length) {
-    state.map.instance.fitBounds(points, {padding: [28, 28], maxZoom: 5});
+    state.map.instance.fitBounds(points, {padding: [40, 40], maxZoom: 8, animate: true, duration: 0.6});
   }
   renderMapVariableList();
   setMapStatus(state.map.aiStatus || "即时变量");
@@ -828,14 +941,158 @@ function renderAgentNotice(title, message) {
   `;
 }
 
+function formatAgentText(text) {
+  if (!text) return "";
+  const lines = text.split("\n");
+  let result = [];
+  let section = "";
+  let collectLines = [];
+  const flushSection = () => {
+    if (section && collectLines.length) {
+      result.push(renderSection(section, collectLines));
+      collectLines = [];
+    }
+    section = "";
+  };
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const sectionMatch = trimmed.match(/^(标题|摘要|发现|建议点击|地图变量|插图提示)\s*[：:]\s*(.*)$/);
+    if (sectionMatch) {
+      flushSection();
+      section = sectionMatch[1];
+      if (sectionMatch[2]) collectLines.push(sectionMatch[2]);
+      continue;
+    }
+    if (trimmed.startsWith("- ") || trimmed.startsWith("· ") || trimmed.startsWith("• ")) {
+      collectLines.push(trimmed.slice(2));
+      continue;
+    }
+    collectLines.push(trimmed);
+  }
+  flushSection();
+  if (!result.length) return escapeHtml(text);
+  return result.join("");
+}
+
+function renderSection(title, lines) {
+  const body = lines.join("\n");
+  switch (title) {
+    case "标题":
+      return `<h3 class="agent-section-title">${escapeHtml(body)}</h3>`;
+    case "摘要":
+      return `<p class="agent-section-summary">${escapeHtml(body)}</p>`;
+    case "发现":
+      return renderDiscoveries(lines);
+    case "建议点击":
+      return renderSuggestions(lines);
+    case "地图变量":
+      return renderMapVars(lines);
+    case "插图提示":
+      return `<div class="agent-meta"><span class="agent-meta-label">插图提示</span>${escapeHtml(body)}</div>`;
+    default:
+      return `<p>${escapeHtml(body)}</p>`;
+  }
+}
+
+function renderDiscoveries(lines) {
+  let html = '<div class="agent-discoveries">';
+  for (const line of lines) {
+    const parts = line.split("｜").map((s) => s.trim());
+    if (parts.length < 2) {
+      html += `<div class="discovery-item"><span class="discovery-text">${escapeHtml(line)}</span></div>`;
+      continue;
+    }
+    const kind = parts[0];
+    const name = parts[1];
+    const desc = parts[2] || "";
+    const sources = parts[3] || "";
+    const sourceIds = sources.replace(/p_mzd_\d+_/g, "").replace(/,\s*$/, "");
+    const kindClass = kind.includes("组织") ? "org" : kind.includes("阶级") ? "class" : kind.includes("人物") ? "person" : "other";
+    html += `<div class="discovery-item">
+      <span class="discovery-kind ${kindClass}">${escapeHtml(kind)}</span>
+      <strong class="discovery-name">${escapeHtml(name)}</strong>
+      <span class="discovery-desc">${escapeHtml(desc)}</span>
+      ${sourceIds ? `<small class="discovery-src">${escapeHtml(sourceIds)}</small>` : ""}
+    </div>`;
+  }
+  html += "</div>";
+  return html;
+}
+
+function renderSuggestions(lines) {
+  let html = '<div class="agent-suggestions">';
+  for (const line of lines) {
+    const parts = line.split("｜").map((s) => s.trim());
+    if (parts.length >= 2) {
+      html += `<span class="agent-suggestion-item">${escapeHtml(parts[1])}</span>`;
+    } else {
+      html += `<span class="agent-suggestion-item">${escapeHtml(line)}</span>`;
+    }
+  }
+  html += "</div>";
+  return html;
+}
+
+function renderMapVars(lines) {
+  let html = '<div class="agent-map-vars">';
+  for (const line of lines) {
+    const parts = line.split("｜").map((s) => s.trim());
+    if (parts.length >= 2) {
+      const kind = parts[0];
+      const label = parts[1];
+      const desc = parts[2] || "";
+      const kindColor = kind.includes("地点") ? "#2f6f5e" : kind.includes("区域") ? "#4f6696" : "#386f90";
+      html += `<div class="map-var-item">
+        <span class="map-var-dot" style="background:${kindColor}"></span>
+        <strong>${escapeHtml(label)}</strong>
+        <em>${escapeHtml(desc)}</em>
+      </div>`;
+    }
+  }
+  html += "</div>";
+  return html;
+}
+
+function formatSubagentName(name) {
+  const map = {
+    "article_scanner": "文章扫描",
+    "context_mapper": "语境映射",
+    "reasoning_synthesizer": "推理综合",
+    "temporal_extractor": "时间提取",
+    "sequence_checker": "时序校验",
+    "figure_extractor": "人物提取",
+    "relation_mapper": "关系映射",
+    "event_extractor": "事件提取",
+    "causal_chain_checker": "因果链校验",
+    "place_extractor": "地点提取",
+    "spatial_context_mapper": "空间语境",
+    "scene_selector": "场景选择",
+    "image_prompt_writer": "图像提示",
+  };
+  return map[name] || name;
+}
+
 async function startWorkflow(workflow, target, options = {}) {
   if (!state.article || !state.sessionId || !state.anchorId) return;
 
-  modalAgent.hidden = false;
+  const isInline = workflow === "article_overview" && options.inline !== false;
+
+  if (isInline) {
+    const panel = $("#analysis-content");
+    const loading = $("#analysis-loading");
+    if (panel) { panel.hidden = true; panel.innerHTML = ""; }
+    if (loading) loading.hidden = false;
+  } else {
+    modalAgent.hidden = false;
+  }
+
   if (!state.apiReady) {
     setAgentStatus("api missing");
-    $("#agent-regenerate").disabled = true;
-    renderAgentNotice("还不能生成", "请先在设置里添加 API Key 和文本模型。配置完成后再点击这个工具。");
+    if (!isInline) {
+      $("#agent-regenerate").disabled = true;
+      renderAgentNotice("还不能生成", "请先在设置里添加 API Key 和文本模型。配置完成后再点击这个工具。");
+    }
     return;
   }
 
@@ -910,32 +1167,50 @@ async function startWorkflow(workflow, target, options = {}) {
       }
       if (type === "subagent.started") renderSubagent(data.subagent);
       if (type === "artifact.block") {
-        agentOutput.classList.remove("empty");
-        agentOutput.textContent = data.text;
-        agentOutput.scrollTop = agentOutput.scrollHeight;
+        if (isInline) {
+          renderAnalysisPanel(data.text);
+        } else {
+          agentOutput.classList.remove("empty");
+          agentOutput.innerHTML = formatAgentText(data.text);
+          agentOutput.scrollTop = agentOutput.scrollHeight;
+        }
       }
       if (type === "artifact.committed") {
-        agentOutput.classList.remove("empty");
-        agentOutput.textContent = data.cached ? `${data.text}\n\n[已复用上次真实生成结果]` : data.text;
-        agentOutput.scrollTop = 0;
+        if (isInline) {
+          renderAnalysisPanel(data.text);
+        } else {
+          agentOutput.classList.remove("empty");
+          const displayText = data.cached ? `${data.text}\n\n[已复用上次真实生成结果]` : data.text;
+          agentOutput.innerHTML = formatAgentText(displayText);
+          agentOutput.scrollTop = 0;
+        }
       }
       if (type === "map.variables.committed") applyAgentMapVariables(data);
       if (type === "image.started") setAgentImageLoading("图像模型正在生成");
       if (type === "image.committed") renderAgentImage(data);
       if (type === "image.failed") setAgentImageLoading(data.error?.message || "图像生成失败");
       if (type === "workflow.completed") {
+        const loading = $("#analysis-loading");
+        if (loading) loading.hidden = true;
+        document.querySelectorAll(".context-card.loading").forEach((node) => node.classList.remove("loading"));
         setAgentStatus("completed");
-        $("#agent-regenerate").disabled = !state.lastWorkflowRequest;
+        if (!isInline) $("#agent-regenerate").disabled = !state.lastWorkflowRequest;
         source.close();
       }
       if (type === "workflow.failed") {
-        if (!options.silentFailure) {
+        const loading = $("#analysis-loading");
+        if (loading) loading.hidden = true;
+        document.querySelectorAll(".context-card.loading").forEach((node) => node.classList.remove("loading"));
+        if (isInline) {
+          if (loading) loading.innerHTML = `<span style="color:var(--oxide)">分析失败：${escapeHtml(friendlyError(data.error?.message))}</span>`;
+          loading.hidden = false;
+        } else if (!options.silentFailure) {
           agentOutput.classList.remove("empty");
           agentOutput.classList.remove("notice-mode");
           agentOutput.textContent = friendlyError(data.error?.message);
         }
         setAgentStatus("failed");
-        $("#agent-regenerate").disabled = !state.lastWorkflowRequest;
+        if (!isInline) $("#agent-regenerate").disabled = !state.lastWorkflowRequest;
         source.close();
       }
     });
@@ -1049,13 +1324,21 @@ document.addEventListener("click", (event) => {
 
   const button = event.target.closest("[data-workflow]");
   if (!button) return;
+  const workflow = button.dataset.workflow;
   const title = button.dataset.targetLabel || button.textContent.trim() || "探索";
+  if (workflow === "article_overview") {
+    startWorkflow(workflow, workflowTargetFromButton(button), {inline: true}).catch((error) => {
+      const loading = $("#analysis-loading");
+      if (loading) loading.innerHTML = `<span style="color:var(--oxide)">分析失败：${escapeHtml(error.message || "工作流失败")}</span>`;
+    });
+    return;
+  }
   openToolDialog(title, {
     showAgent: true,
     showTimeline: button.dataset.panel === "timeline",
     showMap: button.dataset.workflow === "map_context",
   });
-  startWorkflow(button.dataset.workflow, workflowTargetFromButton(button)).catch((error) => {
+  startWorkflow(workflow, workflowTargetFromButton(button)).catch((error) => {
     agentOutput.textContent = error.message || "工作流失败";
     setAgentStatus("failed");
   });
@@ -1078,7 +1361,9 @@ function paragraphFromSelection(selection) {
 async function submitInteraction(eventType, options = {}) {
   if (!state.article || !state.sessionId || !state.anchorId) return;
 
-  if (options.openDialog !== false) {
+  const isInline = options.inline === true;
+
+  if (!isInline && options.openDialog !== false) {
     openToolDialog("实时情境", {showAgent: false, showContext: true});
   }
 
@@ -1089,7 +1374,9 @@ async function submitInteraction(eventType, options = {}) {
   setRuntimeLabel("streaming");
   statusNode.textContent = "大模型正在生成";
 
-  document.querySelectorAll(".context-card").forEach((node) => node.classList.add("loading"));
+  if (!isInline) {
+    document.querySelectorAll(".context-card").forEach((node) => node.classList.add("loading"));
+  }
 
   const payload = {
     eventType,
@@ -1140,7 +1427,21 @@ async function submitInteraction(eventType, options = {}) {
         data.updateSlots.forEach((slot) => cardForSlot(slot)?.classList.add("loading"));
       }
       if (type === "slot.block") renderPartial(data.slot, data.text);
-      if (type === "slot.committed") renderCard(data.payload);
+      if (type === "slot.committed") {
+        if (isInline) {
+          const p = data.payload;
+          const slot = data.slot;
+          const panel = $("#analysis-content");
+          if (panel && p) {
+            const label = slot === "writing_context" ? "写作背景" : slot === "era_context" ? "时代背景" : "核心论点";
+            const cls = slot === "era_context" ? "situation" : slot === "core_argument" ? "argument" : "";
+            const cardHtml = `<div class="context-card-inline ${cls}"><h4>${escapeHtml(label)}</h4><p>${escapeHtml(p.summary || "")}</p></div>`;
+            panel.innerHTML += cardHtml;
+          }
+        } else {
+          renderCard(data.payload);
+        }
+      }
       if (type === "interaction.completed") {
         statusNode.textContent = "生成完成";
         setRuntimeLabel("ready");
@@ -1182,13 +1483,16 @@ async function init() {
   await loadArticle(state.articles[0]);
 }
 
-reader.addEventListener("mouseup", () => {
+const selectionToolbar = $("#selection-toolbar");
+const noteDialog = $("#note-dialog");
+
+reader.addEventListener("mouseup", (e) => {
   const selection = window.getSelection();
   const text = selection ? selection.toString().trim() : "";
   if (!text) {
     state.selection = null;
     $("#analyze").disabled = true;
-    statusNode.textContent = "未选择文本";
+    selectionToolbar.hidden = true;
     return;
   }
   const node = paragraphFromSelection(selection);
@@ -1201,7 +1505,17 @@ reader.addEventListener("mouseup", () => {
     endOffset: null,
   };
   $("#analyze").disabled = false;
-  statusNode.textContent = `已选择 ${text.length} 个字`;
+  statusNode.textContent = `${text.length} 字`;
+  const rect = selection.getRangeAt(0).getBoundingClientRect();
+  selectionToolbar.hidden = false;
+  selectionToolbar.style.left = `${rect.left + rect.width / 2 - selectionToolbar.offsetWidth / 2}px`;
+  selectionToolbar.style.top = `${rect.top - selectionToolbar.offsetHeight - 8}px`;
+});
+
+document.addEventListener("mousedown", (e) => {
+  if (!selectionToolbar.hidden && !selectionToolbar.contains(e.target) && !reader.contains(e.target)) {
+    selectionToolbar.hidden = true;
+  }
 });
 
 $("#analyze").addEventListener("click", async () => {
@@ -1220,6 +1534,19 @@ $("#question-form").addEventListener("submit", async (event) => {
   if (!question) return;
   await submitInteraction("question_submitted", {question, anchorId: state.anchorId});
 });
+
+function navigateArticle(direction) {
+  if (!state.articles.length || !state.article) return;
+  const currentIndex = state.articles.findIndex((item) => item.articleId === state.article.articleId);
+  const nextIndex = currentIndex + direction;
+  if (nextIndex < 0 || nextIndex >= state.articles.length) return;
+  const select = $("#article-select");
+  select.value = articleOptionValue(state.articles[nextIndex]);
+  loadArticle(state.articles[nextIndex]);
+}
+
+$("#prev-article").addEventListener("click", () => navigateArticle(-1));
+$("#next-article").addEventListener("click", () => navigateArticle(1));
 
 init().catch((error) => {
   console.error(error);

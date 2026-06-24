@@ -10,17 +10,17 @@ from .corpus import ArticleNotFound, corpus
 from .llm import LLMConfigurationError, LLMProviderError, OpenAICompatibleStreamClient
 from .models import InteractionEvent
 
-Slot = Literal["background", "situation", "thought"]
-SLOTS: list[Slot] = ["background", "situation", "thought"]
+Slot = Literal["writing_context", "era_context", "core_argument"]
+SLOTS: list[Slot] = ["writing_context", "era_context", "core_argument"]
 SLOT_TITLES: dict[Slot, str] = {
-    "background": "历史背景",
-    "situation": "当时处境",
-    "thought": "思想与推理",
+    "writing_context": "写作背景",
+    "era_context": "时代背景",
+    "core_argument": "核心论点",
 }
 SLOT_QUESTIONS: dict[Slot, str] = {
-    "background": "只依据当前原文，这段文字之前或开头呈现了哪些问题来源？",
-    "situation": "站在文本写作时点，原文显示必须面对什么判断或限制？",
-    "thought": "正文如何认识问题、展开推理并导向行动或判断？",
+    "writing_context": "这篇文章写于什么时间地点？毛泽东当时在做什么工作、处于什么处境？",
+    "era_context": "当时中国社会面临什么主要矛盾和问题？这篇文章回应了什么样的时代挑战？",
+    "core_argument": "文章的核心主张是什么？毛泽东用什么推理逻辑得出结论？",
 }
 LABEL_RE = re.compile(r"^(标题|摘要|要点|来源)\s*[:：]\s*(.*)$")
 SOURCE_RE = re.compile(r"\b(?:p|src)_[A-Za-z0-9_-]+\b")

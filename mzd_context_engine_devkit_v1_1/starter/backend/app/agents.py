@@ -4,7 +4,6 @@ import base64
 import binascii
 import hashlib
 import json
-import math
 import os
 import re
 from collections.abc import AsyncIterator
@@ -37,6 +36,123 @@ WORKFLOW_TITLES = {
     "illustration_prompt": "插图生成提示",
 }
 
+KNOWN_GEO_COORDS: dict[str, tuple[float, float]] = {
+    "北京": (39.9042, 116.4074),
+    "上海": (31.2304, 121.4737),
+    "广州": (23.1291, 113.2644),
+    "武汉": (30.5928, 114.3055),
+    "长沙": (28.2282, 112.9388),
+    "南京": (32.0603, 118.7969),
+    "杭州": (30.2741, 120.1551),
+    "天津": (39.3434, 117.3616),
+    "重庆": (29.5630, 106.5516),
+    "成都": (30.5728, 104.0668),
+    "西安": (34.3416, 108.9398),
+    "延安": (36.5857, 109.4898),
+    "贵阳": (26.6470, 106.6302),
+    "昆明": (25.0389, 102.7183),
+    "南昌": (28.6820, 115.8579),
+    "福州": (26.0745, 119.2965),
+    "济南": (36.6512, 116.9972),
+    "郑州": (34.7466, 113.6254),
+    "太原": (37.8706, 112.5489),
+    "合肥": (31.8206, 117.2272),
+    "石家庄": (38.0428, 114.5149),
+    "沈阳": (41.8057, 123.4315),
+    "哈尔滨": (45.8038, 126.5350),
+    "长春": (43.8171, 125.3235),
+    "大连": (38.9140, 121.6147),
+    "兰州": (36.0611, 103.8343),
+    "银川": (38.4872, 106.2309),
+    "西宁": (36.6171, 101.7782),
+    "乌鲁木齐": (43.8256, 87.6168),
+    "拉萨": (29.6500, 91.1000),
+    "呼和浩特": (40.8424, 111.7500),
+    "海口": (20.0174, 110.3492),
+    "南宁": (22.8170, 108.3665),
+    "井冈山": (26.5779, 114.1697),
+    "瑞金": (25.8817, 116.0307),
+    "遵义": (27.7254, 106.9273),
+    "古田": (25.1157, 116.8056),
+    "遵义会议会址": (27.7254, 106.9273),
+    "西柏坡": (38.1937, 114.0619),
+    "庐山": (29.5281, 115.9275),
+    "大别山": (31.3500, 115.8000),
+    "井冈山革命根据地": (26.5779, 114.1697),
+    "延安革命根据地": (36.5857, 109.4898),
+    "黄洋界": (26.5800, 114.1700),
+    "娄山关": (27.8500, 106.7500),
+    "泸定桥": (29.9167, 102.2333),
+    "吴起镇": (36.9250, 108.1833),
+    "直罗镇": (35.9500, 109.1000),
+    "平型关": (39.2167, 113.7167),
+    "台儿庄": (34.5667, 117.7333),
+    "百团大战": (37.8667, 112.5500),
+    "南泥湾": (36.4833, 109.5333),
+    "杨家岭": (36.5833, 109.4833),
+    "枣园": (36.5833, 109.4667),
+    "凤凰山": (36.6000, 109.4667),
+    "瓦窑堡": (37.1667, 109.6833),
+    "保安": (36.8167, 108.3333),
+    "汉口": (30.5800, 114.2700),
+    "武昌": (30.5500, 114.3400),
+    "九江": (29.7050, 116.0014),
+    "韶山": (27.9150, 112.5280),
+    "湘潭": (27.8300, 112.9500),
+    "衡阳": (26.8930, 112.5719),
+    "邵阳": (27.2389, 111.4672),
+    "郴州": (25.7700, 113.0147),
+    "株洲": (27.8330, 113.1317),
+    "岳阳": (29.3572, 113.1289),
+    "益阳": (28.5539, 112.3554),
+    "常德": (29.0316, 111.6986),
+    "吉首": (28.3117, 109.7389),
+    "凤凰古城": (27.9480, 109.5994),
+    "瑞金苏区": (25.8817, 116.0307),
+    "中央苏区": (25.8817, 116.0307),
+    "赣南": (25.8000, 115.5000),
+    "闽西": (25.1000, 116.5000),
+    "湘赣": (27.5000, 114.0000),
+    "鄂豫皖": (31.5000, 115.5000),
+    "川陕": (32.0000, 107.0000),
+    "陕甘宁": (36.5000, 108.5000),
+    "晋察冀": (38.5000, 114.5000),
+    "晋冀鲁豫": (36.5000, 114.5000),
+    "山东": (36.6685, 117.0209),
+    "河南": (34.7466, 113.6254),
+    "河北": (38.0428, 114.5149),
+    "山西": (37.8706, 112.5489),
+    "陕西": (34.2658, 108.9541),
+    "甘肃": (36.0594, 103.8343),
+    "四川": (30.5728, 104.0668),
+    "贵州": (26.6470, 106.6302),
+    "云南": (25.0389, 102.7183),
+    "湖南": (28.2282, 112.9388),
+    "湖北": (30.5928, 114.3055),
+    "江西": (28.6820, 115.8579),
+    "安徽": (31.8206, 117.2272),
+    "江苏": (32.0603, 118.7969),
+    "浙江": (30.2741, 120.1551),
+    "福建": (26.0745, 119.2965),
+    "广东": (23.1291, 113.2644),
+    "广西": (22.8170, 108.3665),
+    "东北": (43.0000, 125.0000),
+    "华北": (39.0000, 115.0000),
+    "华东": (32.0000, 118.0000),
+    "华中": (30.0000, 114.0000),
+    "华南": (23.0000, 113.0000),
+    "西南": (29.0000, 105.0000),
+    "西北": (36.0000, 105.0000),
+    "长江": (30.0000, 112.0000),
+    "黄河": (36.0000, 113.0000),
+    "珠江": (23.0000, 113.5000),
+    "淮河": (33.0000, 116.0000),
+    "松花江": (46.0000, 127.0000),
+    "珠江流域": (23.0000, 113.0000),
+    "长江流域": (30.0000, 112.0000),
+    "黄河流域": (35.0000, 112.0000),
+}
+
 WORKFLOW_SUBAGENTS = {
     "article_overview": ["article_scanner", "context_mapper", "reasoning_synthesizer"],
     "timeline": ["temporal_extractor", "sequence_checker"],
@@ -47,11 +163,11 @@ WORKFLOW_SUBAGENTS = {
 }
 
 WORKFLOW_INSTRUCTIONS = {
-    "article_overview": "生成全篇整体阅读导览：核心问题、结构推进、可点击的后续探索方向。",
+    "article_overview": "介绍这篇文章的写作背景：毛泽东当时在做什么工作、在哪里写的、当时中国面临什么社会问题、这篇文章要解决什么核心矛盾。再总结文章的核心论点和推理脉络。",
     "timeline": "从当前原文中提取时间、阶段、先后关系；没有明确时间时说明资料不足。",
     "figure_network": "只从当前原文识别人物、组织和关系；不要凭记忆补充人物。",
     "event_chain": "提取关键事件、触发、约束和文本中的判断链；只使用给定原文。",
-    "map_context": "识别地点、区域、阶层、路线或空间关系；把可视化所需变量单独写入“地图变量”。若原文未标明真实地点，输出文本支持的语义空间变量，不伪造地名。",
+    "map_context": '基于文章的写作时间和地点，梳理文章涉及的真实地理空间：毛泽东写作本文时所在的地点和时代背景，文中提到的真实地名、区域、路线。把每个地点写入"地图变量"，格式为：地点｜真实地名｜纬度,经度｜该地在文中的历史意义｜来源：sourceId。坐标必须是该地名的真实地理坐标（如：北京=39.9,116.4；广州=23.13,113.26）。仅输出你能确定真实坐标的地点，不确定的不要输出。',
     "illustration_prompt": "为图像模型生成可审核插图提示词，只描绘文本可支持的场景，不塑造未经支持的人物外貌。",
 }
 
@@ -132,14 +248,6 @@ def build_image_prompt(article: dict[str, Any], req: WorkflowRequest, artifact_t
 """.strip()
 
 
-def stable_semantic_point(seed: str, index: int) -> tuple[float, float]:
-    digest = hashlib.sha1(seed.encode("utf-8")).digest()
-    angle_seed = int.from_bytes(digest[:2], "big") / 65535
-    radius_seed = int.from_bytes(digest[2:4], "big") / 65535
-    angle = (angle_seed * math.tau) + index * 0.72
-    radius = 2.4 + radius_seed * 5.8
-    return 35.8 + radius * 0.68 * math.sin(angle), 104.2 + radius * math.cos(angle)
-
 
 def article_source_ids(article: dict[str, Any]) -> set[str]:
     return {item["paragraphId"] for item in article.get("paragraphs", [])}
@@ -170,8 +278,14 @@ def parse_map_variable_lines(section: str, article: dict[str, Any], req: Workflo
             continue
         kind = parts[0][:16]
         label = parts[1][:30]
-        description = parts[2][:120] if len(parts) >= 3 else label
-        lat, lng = stable_semantic_point(f"{req.articleId}:{label}:{','.join(source_ids)}", len(variables))
+        lat, lng = None, None
+        if len(parts) >= 3:
+            coord_match = re.match(r"^\s*(-?\d+\.?\d*)\s*[,，]\s*(-?\d+\.?\d*)\s*$", parts[2])
+            if coord_match:
+                lat, lng = float(coord_match.group(1)), float(coord_match.group(2))
+        if lat is None or lng is None or not (18 <= lat <= 54 and 73 <= lng <= 135):
+            continue
+        description = parts[3][:120] if len(parts) >= 4 else label
         variables.append(
             {
                 "id": f"ai_map_{hashlib.sha1((label + ''.join(source_ids)).encode('utf-8')).hexdigest()[:10]}",
@@ -190,23 +304,7 @@ def parse_map_variable_lines(section: str, article: dict[str, Any], req: Workflo
 
 
 def fallback_map_variables(article: dict[str, Any], req: WorkflowRequest) -> list[dict[str, Any]]:
-    variables: list[dict[str, Any]] = []
-    for index, anchor in enumerate(article.get("anchors", [])[:8]):
-        label = re.sub(r"^第\d+组[:：]\s*", "", anchor["title"])[:30]
-        lat, lng = stable_semantic_point(f"{req.articleId}:{anchor['anchorId']}", index)
-        variables.append(
-            {
-                "id": f"ai_map_{anchor['anchorId']}",
-                "label": label,
-                "description": "由文章锚点生成的语义阅读位置",
-                "sourceIds": anchor.get("paragraphIds", [])[:8],
-                "lat": round(lat, 5),
-                "lng": round(lng, 5),
-                "weight": max(1, len(anchor.get("paragraphIds", []))),
-                "kind": "semantic",
-            }
-        )
-    return variables
+    return []
 
 
 def extract_map_variables(article: dict[str, Any], req: WorkflowRequest, artifact_text: str) -> list[dict[str, Any]]:
@@ -283,7 +381,7 @@ def workflow_messages(article: dict[str, Any], req: WorkflowRequest) -> list[dic
     title = WORKFLOW_TITLES[req.workflow]
     instruction = WORKFLOW_INSTRUCTIONS[req.workflow]
     map_output = (
-        "地图变量：\n- 类型｜名称｜说明｜来源：sourceId1,sourceId2\n"
+        "地图变量：\n- 类型｜名称｜纬度,经度｜说明｜来源：sourceId1,sourceId2\n"
         if req.workflow == "map_context"
         else ""
     )
