@@ -12,6 +12,7 @@ const state = {
   article: null,
   sessionId: null,
   anchorId: null,
+  loadingArticle: false,
   uiVersion: 0,
   agentVersion: 0,
   selection: null,
@@ -47,9 +48,9 @@ const toolDialog = $("#tool-dialog");
 const modalAgent = $("#modal-agent");
 const modalContext = $("#modal-context");
 const modalTimeline = $("#modal-timeline");
-const modalSearch = $("#modal-search");
-const modalNote = $("#modal-note");
-const modalMap = $("#modal-map");
+const searchDialog = $("#search-dialog");
+const noteDialog = $("#note-dialog");
+const mapDialog = $("#map-dialog");
 
 const ICONS = {
   settings: '<path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.38 1.06V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 0-1.06-.38H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .38-1.06V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.12.37.33.7.6 1 .3.25.67.38 1.06.38H21a2 2 0 0 1 0 4h-.09A1.65 1.65 0 0 0 19.4 15Z"/>',
@@ -211,27 +212,12 @@ function renderContextCardsInline(writingContext, eraContext, coreArgument) {
 
 function openToolDialog(title, options = {}) {
   $("#tool-dialog-title").textContent = title;
-  toolDialog.classList.toggle("map-dialog", Boolean(options.showMap));
   toolDialog.classList.toggle("agent-dialog", options.showAgent !== false);
   modalAgent.hidden = options.showAgent === false;
   modalContext.hidden = !options.showContext;
   modalTimeline.hidden = !options.showTimeline;
-  modalSearch.hidden = !options.showSearch;
-  modalNote.hidden = !options.showNote;
-  modalMap.hidden = !options.showMap;
   if (!toolDialog.open) toolDialog.showModal();
   hydrateIcons(toolDialog);
-  if (options.showMap) {
-    window.requestAnimationFrame(() => renderInstantMap());
-  }
-  if (options.showSearch) {
-    renderSearchResults();
-    window.requestAnimationFrame(() => $("#article-search")?.focus());
-  }
-  if (options.showNote) {
-    loadArticleNote();
-    window.requestAnimationFrame(() => $("#article-note")?.focus());
-  }
 }
 
 function closeToolDialog() {
@@ -448,21 +434,37 @@ async function saveApiSettings() {
 }
 
 function bindSettings() {
-  $("#settings-open").addEventListener("click", async () => {
+  const safe = (sel, event, handler) => {
+    const el = $(sel);
+    if (!el) return;
+    el.addEventListener(event, (...args) => {
+      const result = handler(...args);
+      if (result && typeof result.catch === "function") {
+        result.catch((error) => { statusNode.textContent = error.message || "操作失败"; });
+      }
+    });
+  };
+  safe("#settings-open", "click", async () => {
     await loadApiSettings();
     $("#settings-dialog").showModal();
   });
-  $("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
-  $("#tool-dialog-close").addEventListener("click", closeToolDialog);
-  $("#search-open").addEventListener("click", () => openToolDialog("正文搜索", {showAgent: false, showSearch: true}));
-  $("#note-open").addEventListener("click", async () => {
+  safe("#settings-close", "click", () => $("#settings-dialog").close());
+  safe("#tool-dialog-close", "click", closeToolDialog);
+  safe("#search-open", "click", async () => {
+    await loadApiSettings();
+    searchDialog.showModal();
+    renderSearchResults();
+    window.requestAnimationFrame(() => $("#article-search")?.focus());
+  });
+  safe("#search-dialog-close", "click", () => searchDialog.close());
+  safe("#note-open", "click", async () => {
     await loadApiSettings();
     loadArticleNote();
     noteDialog.showModal();
   });
-  $("#note-dialog-close").addEventListener("click", () => noteDialog.close());
-  $("#article-note").addEventListener("input", saveArticleNote);
-  $("#font-open").addEventListener("click", async () => {
+  safe("#note-dialog-close", "click", () => noteDialog.close());
+  safe("#article-note", "input", saveArticleNote);
+  safe("#font-open", "click", async () => {
     await loadApiSettings();
     $("#settings-dialog").showModal();
     window.requestAnimationFrame(() => {
@@ -470,35 +472,36 @@ function bindSettings() {
       if (section) section.scrollIntoView({block: "start", behavior: "smooth"});
     });
   });
-  $("#open-anchors").addEventListener("click", () => openToolDialog("锚点", {showAgent: false, showTimeline: true}));
-  $("#article-search").addEventListener("input", renderSearchResults);
-  $("#map-keyword-form").addEventListener("submit", (event) => {
+  safe("#open-anchors", "click", () => openToolDialog("锚点", {showAgent: false, showTimeline: true}));
+  safe("#article-search", "input", renderSearchResults);
+  safe("#map-keyword-form", "submit", (event) => {
     event.preventDefault();
     const input = $("#map-keyword");
     addMapKeyword(input.value);
     input.value = "";
   });
-  $("#api-save").addEventListener("click", () => {
+  safe("#map-dialog-close", "click", () => mapDialog.close());
+  safe("#api-save", "click", () => {
     saveApiSettings().catch((error) => {
       $("#api-status").textContent = error.message || "API 设置保存失败";
     });
   });
 
-  $("#pref-font-size").addEventListener("input", (event) => {
+  safe("#pref-font-size", "input", (event) => {
     state.prefs.fontSize = Number(event.target.value);
     applyPrefs();
     savePrefs();
   });
-  $("#pref-line-height").addEventListener("input", (event) => {
+  safe("#pref-line-height", "input", (event) => {
     state.prefs.lineHeight = Number(event.target.value);
     applyPrefs();
     savePrefs();
   });
-  $("#pref-auto-generate").addEventListener("change", (event) => {
+  safe("#pref-auto-generate", "change", (event) => {
     state.prefs.autoGenerate = event.target.checked;
     savePrefs();
   });
-  $("#pref-show-events").addEventListener("change", (event) => {
+  safe("#pref-show-events", "change", (event) => {
     state.prefs.showEvents = event.target.checked;
     applyPrefs();
     savePrefs();
@@ -550,8 +553,6 @@ function renderArticle() {
   $("#reader-title").textContent = state.article.title;
   $("#article-folio").textContent = `${state.article.paragraphs.length} 段 · ${state.article.anchors.length} 锚点`;
   $("#anchor-badge").textContent = state.article.coreQuestion || articleMeta(state.article);
-  const mapScope = $("#map-scope");
-  if (mapScope) mapScope.textContent = state.article.location || state.article.sectionTitle || "地点未标注";
   reader.innerHTML = state.article.paragraphs
     .map((paragraph) => `<p class="paragraph" data-id="${escapeHtml(paragraph.paragraphId)}" data-anchor="${escapeHtml(paragraph.anchorId)}">${escapeHtml(paragraph.text)}</p>`)
     .join("");
@@ -652,50 +653,54 @@ function renderExplorationSurface() {
       `)
       .join("");
   }
-  const nodeA = document.querySelector(".node-a");
-  if (nodeA) nodeA.textContent = state.article.location || state.article.sectionTitle || "篇章位置";
   hydrateIcons();
 }
 
 async function loadArticle(summary) {
-  if (state.stream) state.stream.close();
-  cancelBackgroundWorkflows();
-  state.uiVersion += 1;
-  state.selection = null;
-  state.map.variables = [];
-  state.map.keywordCount = 0;
-  setMapStatus("即时变量");
-  clearMapLayers();
-  $("#analyze").disabled = true;
-  resetContextCards();
-  resetAgent();
-  const analysisContent = $("#analysis-content");
-  const analysisLoading = $("#analysis-loading");
-  if (analysisContent) { analysisContent.hidden = true; analysisContent.innerHTML = ""; }
-  if (analysisLoading) { analysisLoading.hidden = false; analysisLoading.innerHTML = '<span class="pulse" aria-hidden="true"></span><span>正在分析文章...</span>'; }
-  setRuntimeLabel("loading");
-  statusNode.textContent = "正在加载文章";
+  if (state.loadingArticle) return;
+  state.loadingArticle = true;
+  try {
+    if (state.stream) state.stream.close();
+    cancelBackgroundWorkflows();
+    state.uiVersion += 1;
+    state.selection = null;
+    state.map.variables = [];
+    state.map.keywordCount = 0;
+    setMapStatus("即时变量");
+    clearMapLayers();
+    $("#analyze").disabled = true;
+    resetContextCards();
+    resetAgent();
+    const analysisContent = $("#analysis-content");
+    const analysisLoading = $("#analysis-loading");
+    if (analysisContent) { analysisContent.hidden = true; analysisContent.innerHTML = ""; }
+    if (analysisLoading) { analysisLoading.hidden = false; analysisLoading.innerHTML = '<span class="pulse" aria-hidden="true"></span><span>正在分析文章...</span>'; }
+    setRuntimeLabel("loading");
+    statusNode.textContent = "正在加载文章";
 
-  state.article = await fetch(`/api/v1/articles/${summary.articleId}?releaseId=${summary.currentReleaseId}`).then((response) => {
-    if (!response.ok) throw new Error(`文章加载失败：${response.status}`);
-    return response.json();
-  });
-  state.anchorId = state.article.anchors[0].anchorId;
-  renderArticle();
-  await createReadingSession();
+    state.article = await fetch(`/api/v1/articles/${summary.articleId}?releaseId=${summary.currentReleaseId}`).then((response) => {
+      if (!response.ok) throw new Error(`文章加载失败：${response.status}`);
+      return response.json();
+    });
+    state.anchorId = state.article.anchors[0]?.anchorId || null;
+    renderArticle();
+    await createReadingSession();
 
-  setRuntimeLabel("ready");
-  if (state.prefs.autoGenerate && state.apiReady) {
-    startWorkflow("article_overview", articleOverviewTarget());
-    prewarmArticleWorkflows();
-    setTimeout(() => {
-      submitInteraction("anchor_changed", {anchorId: state.anchorId, openDialog: false, inline: true});
-    }, 800);
-  } else if (state.prefs.autoGenerate) {
-    setRuntimeLabel("api missing");
-    statusNode.textContent = "请在设置里添加 API 后生成";
-  } else {
-    statusNode.textContent = "已关闭自动生成，点击段落或提问开始";
+    setRuntimeLabel("ready");
+    if (state.prefs.autoGenerate && state.apiReady) {
+      startWorkflow("article_overview", articleOverviewTarget());
+      prewarmArticleWorkflows();
+      setTimeout(() => {
+        submitInteraction("anchor_changed", {anchorId: state.anchorId, openDialog: false, inline: true});
+      }, 800);
+    } else if (state.prefs.autoGenerate) {
+      setRuntimeLabel("api missing");
+      statusNode.textContent = "请在设置里添加 API 后生成";
+    } else {
+      statusNode.textContent = "已关闭自动生成，点击段落或提问开始";
+    }
+  } finally {
+    state.loadingArticle = false;
   }
 }
 
@@ -743,29 +748,6 @@ function renderAgentImage(data) {
   `;
 }
 
-function semanticAnchorLabel(anchor, index) {
-  const title = anchor?.title || "";
-  if (title.includes("注释")) return "文本注释";
-  const labels = ["核心命题", "写作背景", "组织力量", "革命对象", "革命路线", "行动条件", "判断转折", "时代背景"];
-  return labels[index % labels.length];
-}
-
-function semanticAnchorDescription(anchor, index) {
-  const title = anchor?.title || "";
-  const clean = title.replace(/^第\d+组[:：]\s*/, "");
-  const descriptions = [
-    "文章首先展开的核心问题",
-    "写作时的社会环境与个人处境",
-    "组织、力量与行动主体的关系",
-    "敌友、对象与立场判断",
-    "由分析导出的行动方向",
-    "文本中的条件、限制与约束",
-    "论证推进中的判断变化",
-    "需要回到原文理解的历史背景",
-  ];
-  return clean && clean.length < 34 ? clean : descriptions[index % descriptions.length];
-}
-
 function clearMapLayers() {
   state.map.layers.forEach((layer) => layer.remove());
   state.map.layers = [];
@@ -802,7 +784,8 @@ function renderMapVariableList() {
 
 function renderInstantMap() {
   const target = $("#history-map");
-  if (!target || typeof L === "undefined") {
+  if (!target) return;
+  if (typeof L === "undefined") {
     target.innerHTML = '<div class="map-fallback">地图组件未加载，请刷新页面。</div>';
     return;
   }
@@ -1159,7 +1142,8 @@ async function startWorkflow(workflow, target, options = {}) {
   ];
   types.forEach((type) => {
     source.addEventListener(type, (event) => {
-      const data = JSON.parse(event.data);
+      let data;
+      try { data = JSON.parse(event.data); } catch { return; }
       if (data.uiVersion !== state.agentVersion) return;
 
       if (type === "workflow.accepted") {
@@ -1251,13 +1235,16 @@ async function runBackgroundWorkflow(workflow, target, version) {
 
   return new Promise((resolve) => {
     const closeSource = (status = "settled") => {
+      clearTimeout(timer);
       source.close();
       state.prewarm.streams = state.prewarm.streams.filter((item) => item !== source);
       resolve(status);
     };
+    const timer = setTimeout(() => closeSource("timeout"), 60000);
 
     source.addEventListener("map.variables.committed", (event) => {
-      const data = JSON.parse(event.data);
+      let data;
+      try { data = JSON.parse(event.data); } catch { return; }
       if (version !== state.prewarm.version) return;
       applyAgentMapVariables(data);
     });
@@ -1280,7 +1267,6 @@ function prewarmArticleWorkflows() {
   statusNode.textContent = "正在后台准备全篇与地图变量";
   setMapStatus("AI 准备中");
   Promise.allSettled([
-    runBackgroundWorkflow("article_overview", articleOverviewTarget(), version),
     runBackgroundWorkflow("map_context", mapContextTarget(), version),
   ]).then((results) => {
     if (version !== state.prewarm.version) return;
@@ -1304,7 +1290,8 @@ document.addEventListener("click", (event) => {
 
   const mapTrigger = event.target.closest("[data-map-panel]");
   if (mapTrigger) {
-    openToolDialog("地图语境", {showAgent: false, showMap: true});
+    mapDialog.showModal();
+    window.requestAnimationFrame(() => renderInstantMap());
     return;
   }
 
@@ -1333,10 +1320,15 @@ document.addEventListener("click", (event) => {
     });
     return;
   }
+  if (workflow === "map_context") {
+    startWorkflow(workflow, workflowTargetFromButton(button)).catch((error) => {
+      statusNode.textContent = error.message || "地图工作流失败";
+    });
+    return;
+  }
   openToolDialog(title, {
     showAgent: true,
     showTimeline: button.dataset.panel === "timeline",
-    showMap: button.dataset.workflow === "map_context",
   });
   startWorkflow(workflow, workflowTargetFromButton(button)).catch((error) => {
     agentOutput.textContent = error.message || "工作流失败";
@@ -1419,7 +1411,8 @@ async function submitInteraction(eventType, options = {}) {
 
   types.forEach((type) => {
     source.addEventListener(type, (event) => {
-      const data = JSON.parse(event.data);
+      let data;
+      try { data = JSON.parse(event.data); } catch { return; }
       logEvent(type, data);
       if (data.uiVersion !== state.uiVersion) return;
 
@@ -1477,14 +1470,19 @@ async function init() {
     .join("");
   select.addEventListener("change", async () => {
     const selected = state.articles.find((item) => articleOptionValue(item) === select.value);
-    if (selected) await loadArticle(selected);
+    if (selected) {
+      try {
+        await loadArticle(selected);
+      } catch (error) {
+        statusNode.textContent = error.message || "加载文章失败";
+      }
+    }
   });
 
   await loadArticle(state.articles[0]);
 }
 
 const selectionToolbar = $("#selection-toolbar");
-const noteDialog = $("#note-dialog");
 
 reader.addEventListener("mouseup", (e) => {
   const selection = window.getSelection();
@@ -1520,11 +1518,15 @@ document.addEventListener("mousedown", (e) => {
 
 $("#analyze").addEventListener("click", async () => {
   if (!state.selection) return;
-  await submitInteraction("text_selected", {
-    anchorId: state.anchorId,
-    paragraphId: state.selection.startParagraphId,
-    selection: state.selection,
-  });
+  try {
+    await submitInteraction("text_selected", {
+      anchorId: state.anchorId,
+      paragraphId: state.selection.startParagraphId,
+      selection: state.selection,
+    });
+  } catch (error) {
+    statusNode.textContent = error.message || "分析失败";
+  }
 });
 
 $("#question-form").addEventListener("submit", async (event) => {
@@ -1532,7 +1534,12 @@ $("#question-form").addEventListener("submit", async (event) => {
   const input = $("#question");
   const question = input.value.trim();
   if (!question) return;
-  await submitInteraction("question_submitted", {question, anchorId: state.anchorId});
+  input.value = "";
+  try {
+    await submitInteraction("question_submitted", {question, anchorId: state.anchorId});
+  } catch (error) {
+    statusNode.textContent = error.message || "提问失败";
+  }
 });
 
 function navigateArticle(direction) {
@@ -1542,7 +1549,9 @@ function navigateArticle(direction) {
   if (nextIndex < 0 || nextIndex >= state.articles.length) return;
   const select = $("#article-select");
   select.value = articleOptionValue(state.articles[nextIndex]);
-  loadArticle(state.articles[nextIndex]);
+  loadArticle(state.articles[nextIndex]).catch((error) => {
+    statusNode.textContent = error.message || "切换文章失败";
+  });
 }
 
 $("#prev-article").addEventListener("click", () => navigateArticle(-1));
